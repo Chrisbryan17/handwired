@@ -225,6 +225,59 @@ async function smokeTest() {
   } finally {
     layerBackend.destroy()
   }
+  // Integrate with an unmodified, actual HandwiredOS application circuit:
+  // 800 operations in 67 dependency layers at the checked-in baseline.
+  const {createValueListCircuit} = await import('../src/handwiredos/value-list.ts')
+  const integrated = createValueListCircuit()
+  const integratedSource = Float32Array.from(integrated.initialSource)
+  const integratedExpected = integrated.circuit.evaluateReference(integratedSource)
+  let integratedMismatches = 0, integratedBitMismatches = 0, integratedMaxError = 0
+  let integratedLayerCount = 0
+  for (const strategy of ['monolithic', 'layers'] as const) {
+    const realEvaluator = await createWebGpuEvaluator(integrated.circuit, {
+      mode: 'gpu', device, capacity: 1, strategy,
+    })
+    try {
+      integratedLayerCount = realEvaluator.layerCount
+      const actual = await realEvaluator.evaluate(integratedSource)
+      for (let i = 0; i < integratedExpected.length; i++) {
+        const expected = integratedExpected[i]!, got = actual[i]!
+        if (!Object.is(expected, got)) integratedBitMismatches++
+        const difference = Math.abs(expected - got)
+        if (Number.isFinite(difference)) integratedMaxError = Math.max(integratedMaxError, difference)
+        if (!(Object.is(expected, got) ||
+          (Number.isFinite(difference) && difference <= 0.0001))) integratedMismatches++
+      }
+    } finally {
+      realEvaluator.destroy()
+    }
+  }
+  // Second unmodified application: photo gallery, including its boolean atoms.
+  const {createPhotoGalleryCircuit} = await import('../src/handwiredos/photo-gallery.ts')
+  const gallery = createPhotoGalleryCircuit()
+  const gallerySource = Float32Array.from(gallery.initialSource)
+  const galleryExpected = gallery.circuit.evaluateReference(gallerySource)
+  let galleryMismatches = 0, galleryBitMismatches = 0, galleryMaxError = 0
+  let galleryLayerCount = 0
+  for (const strategy of ['monolithic', 'layers'] as const) {
+    const galleryEvaluator = await createWebGpuEvaluator(gallery.circuit, {
+      mode: 'gpu', device, capacity: 1, strategy,
+    })
+    try {
+      galleryLayerCount = galleryEvaluator.layerCount
+      const actual = await galleryEvaluator.evaluate(gallerySource)
+      for (let i = 0; i < galleryExpected.length; i++) {
+        const expected = galleryExpected[i]!, got = actual[i]!
+        if (!Object.is(expected, got)) galleryBitMismatches++
+        const difference = Math.abs(expected - got)
+        if (Number.isFinite(difference)) galleryMaxError = Math.max(galleryMaxError, difference)
+        if (!(Object.is(expected, got) ||
+          (Number.isFinite(difference) && difference <= 0.0001))) galleryMismatches++
+      }
+    } finally {
+      galleryEvaluator.destroy()
+    }
+  }
   const doomed = await createWebGpuEvaluator(test, {mode: 'gpu', device, capacity: 512})
   doomed.load(data)
   device.destroy()
@@ -238,8 +291,12 @@ async function smokeTest() {
     doomed.destroy()
   }
   const info = {ok: mismatches === 0 && stateMismatches === 0 && layerMismatches === 0
-    && layerStateMismatches === 0 && deviceLossCaught,
-    deviceLossCaught,
+    && layerStateMismatches === 0 && integratedMismatches === 0 && galleryMismatches === 0
+    && deviceLossCaught,
+    deviceLossCaught, galleryOperations: gallery.circuit.operations.length,
+    galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError,
+    integratedOperations: integrated.circuit.operations.length,
+    integratedLayerCount, integratedMismatches, integratedBitMismatches, integratedMaxError,
     mismatches, maxError, stateMismatches, stateMaxError, layerMismatches, layerStateMismatches,
     adapter: adapter.info?.description || adapter.info?.vendor || 'WebGPU adapter',
     testedSamples: 512, operationKinds: ['affine', 'reglu', 'boolean', 'index']}

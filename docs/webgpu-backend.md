@@ -132,9 +132,14 @@ lacks a hand-specialized WebGPU baseline. Independent mathematical JavaScript
 calculations also matched all measured circuit output cells. See
 `lab/runtime-webgpu/results/` for exact JSON evidence.
 
-The mixed-operation browser test also executes five GPU-resident simulation
-steps and detects a deliberately destroyed GPU device. See
-`2026-10-16-hardware-loss.json` for evidence.
+The mixed-operation browser test runs 512 source samples through all four atoms,
+five GPU-resident simulation steps and deliberate GPU device destruction. The
+hardware verifier also builds and executes **two unchanged HandwiredOS application
+circuits** in both dispatch modes: value-list (800 operations, 67 layers) and
+photo-gallery (2,189 operations, 67 layers, including 50 boolean atoms). Each
+had **zero bit mismatches** against `evaluateReference` on its checked-in initial
+source state. This does not cover all reachable application states. See
+`lab/runtime-webgpu/results/2026-10-16-two-real-application-circuits.json`.
 
 The pre-change full repository test suite recorded 1,262 passes, 2 skips and
 one failure/error while parsing the untouched legacy guide file
