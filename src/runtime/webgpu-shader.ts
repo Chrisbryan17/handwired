@@ -1,3 +1,128 @@
-// General Handwired circuit interpreter; the tables are emitted by webgpu.ts.
-// Each invocation owns an independent sample and executes all four runtime operations.
-export const circuitWgsl = "\nstruct Parameters {\n  count: u32,\n  sourceSize: u32,\n  width: u32,\n  operationCount: u32,\n};\nstruct Operation {\n  kind: u32,\n  leftStart: u32,\n  leftCount: u32,\n  gateStart: u32,\n  gateCount: u32,\n  candidateStart: u32,\n  candidateCount: u32,\n  flags: u32,\n  leftBias: f32,\n  gateBias: f32,\n  reserved0: u32,\n  reserved1: u32,\n};\nstruct Term {wire: u32, coefficient: f32};\n@group(0) @binding(0) var<uniform> parameters: Parameters;\n@group(0) @binding(1) var<storage, read_write> sources: array<f32>;\n@group(0) @binding(2) var<storage, read_write> values: array<f32>;\n@group(0) @binding(3) var<storage, read> operations: array<Operation>;\n@group(0) @binding(4) var<storage, read> terms: array<Term>;\n@group(0) @binding(5) var<storage, read> candidates: array<u32>;\n@group(0) @binding(6) var<storage, read> stateWires: array<u32>;\n\nfn affine(base: u32, start: u32, count: u32, bias: f32) -> f32 {\n  var value = bias;\n  for (var index = 0u; index < count; index = index + 1u) {\n    let term = terms[start + index];\n    let product = term.coefficient * values[base + term.wire];\n    value = value + product;\n  }\n  return value;\n}\n\n@compute @workgroup_size(64)\nfn execute(@builtin(global_invocation_id) invocation: vec3<u32>) {\n  let sample = invocation.x;\n  if (sample >= parameters.count) {return;}\n  let sourceBase = sample * parameters.sourceSize;\n  let base = sample * parameters.width;\n  for (var i = 0u; i < parameters.sourceSize; i = i + 1u) {\n    values[base + i] = sources[sourceBase + i];\n  }\n  for (var opIndex = 0u; opIndex < parameters.operationCount; opIndex = opIndex + 1u) {\n    let op = operations[opIndex];\n    var value = affine(base, op.leftStart, op.leftCount, op.leftBias);\n    if (op.kind == 1u) {\n      let gate = affine(base, op.gateStart, op.gateCount, op.gateBias);\n      value = value * max(0.0, gate);\n    } else if (op.kind == 2u) {\n      let shifted = value + 8388609.0;\n      value = shifted - 8388609.0;\n    } else if (op.kind == 3u) {\n      let position = affine(base, op.gateStart, op.gateCount, op.gateBias);\n      if ((position != position)) {\n        value = position;\n      } else if (position < 0.0) {\n        if ((op.flags & 1u) != 0u) {\n          value = 0.0;\n        } else {\n          value = values[base + candidates[op.candidateStart]];\n        }\n      } else if (position >= f32(op.candidateCount)) {\n        if ((op.flags & 2u) != 0u) {\n          value = 0.0;\n        } else {\n          value = values[base + candidates[op.candidateStart + op.candidateCount - 1u]];\n        }\n      } else {\n        let tableIndex = u32(floor(position));\n        value = values[base + candidates[op.candidateStart + tableIndex]];\n      }\n    }\n    values[base + parameters.sourceSize + opIndex] = value;\n  }\n}\n\n@compute @workgroup_size(64)\nfn advanceState(@builtin(global_invocation_id) invocation: vec3<u32>) {\n  let sample = invocation.x;\n  if (sample >= parameters.count) {return;}\n  let sourceBase = sample * parameters.sourceSize;\n  let base = sample * parameters.width;\n  for (var i = 0u; i < parameters.sourceSize; i = i + 1u) {\n    sources[sourceBase + i] = values[base + stateWires[i]];\n  }\n}\n"
+// WebGPU compute shaders for general Handwired circuits.
+// Keep every FP32 rounding step and operation order visible for audit.
+export const circuitWgsl = /* wgsl */ `
+struct Parameters {
+  count: u32,
+  sourceSize: u32,
+  width: u32,
+  operationCount: u32,
+  layerStart: u32,
+  layerCount: u32,
+  reserved0: u32,
+  reserved1: u32,
+};
+struct Operation {
+  kind: u32,
+  leftStart: u32,
+  leftCount: u32,
+  gateStart: u32,
+  gateCount: u32,
+  candidateStart: u32,
+  candidateCount: u32,
+  flags: u32,
+  leftBias: f32,
+  gateBias: f32,
+  reserved0: u32,
+  reserved1: u32,
+};
+struct Term {wire: u32, coefficient: f32};
+@group(0) @binding(0) var<uniform> parameters: Parameters;
+@group(0) @binding(1) var<storage, read_write> sources: array<f32>;
+@group(0) @binding(2) var<storage, read_write> values: array<f32>;
+@group(0) @binding(3) var<storage, read> operations: array<Operation>;
+@group(0) @binding(4) var<storage, read> terms: array<Term>;
+@group(0) @binding(5) var<storage, read> candidates: array<u32>;
+@group(0) @binding(6) var<storage, read> stateWires: array<u32>;
+@group(0) @binding(7) var<storage, read> layerOrder: array<u32>;
+
+fn affine(base: u32, start: u32, count: u32, bias: f32) -> f32 {
+  var value = bias;
+  for (var index = 0u; index < count; index = index + 1u) {
+    let term = terms[start + index];
+    let product = term.coefficient * values[base + term.wire];
+    value = value + product;
+  }
+  return value;
+}
+
+fn executeOperation(base: u32, opIndex: u32) {
+  let op = operations[opIndex];
+  var value = affine(base, op.leftStart, op.leftCount, op.leftBias);
+  if (op.kind == 1u) {
+    let gate = affine(base, op.gateStart, op.gateCount, op.gateBias);
+    value = value * max(0.0, gate);
+  } else if (op.kind == 2u) {
+    let shifted = value + 8388609.0;
+    value = shifted - 8388609.0;
+  } else if (op.kind == 3u) {
+    let position = affine(base, op.gateStart, op.gateCount, op.gateBias);
+    if (position != position) {
+      value = position;
+    } else if (position < 0.0) {
+      if ((op.flags & 1u) != 0u) {
+        value = 0.0;
+      } else {
+        value = values[base + candidates[op.candidateStart]];
+      }
+    } else if (position >= f32(op.candidateCount)) {
+      if ((op.flags & 2u) != 0u) {
+        value = 0.0;
+      } else {
+        value = values[base + candidates[op.candidateStart + op.candidateCount - 1u]];
+      }
+    } else {
+      let tableIndex = u32(floor(position));
+      value = values[base + candidates[op.candidateStart + tableIndex]];
+    }
+  }
+  values[base + parameters.sourceSize + opIndex] = value;
+}
+
+fn copySource(sample: u32) {
+  let sourceBase = sample * parameters.sourceSize;
+  let base = sample * parameters.width;
+  for (var i = 0u; i < parameters.sourceSize; i = i + 1u) {
+    values[base + i] = sources[sourceBase + i];
+  }
+}
+
+@compute @workgroup_size(64)
+fn execute(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let sample = invocation.x;
+  if (sample >= parameters.count) {return;}
+  copySource(sample);
+  let base = sample * parameters.width;
+  for (var opIndex = 0u; opIndex < parameters.operationCount; opIndex = opIndex + 1u) {
+    executeOperation(base, opIndex);
+  }
+}
+
+@compute @workgroup_size(64)
+fn loadSources(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let sample = invocation.x;
+  if (sample >= parameters.count) {return;}
+  copySource(sample);
+}
+
+@compute @workgroup_size(64)
+fn executeLayer(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let sample = invocation.x;
+  if (sample >= parameters.count) {return;}
+  let base = sample * parameters.width;
+  for (var i = 0u; i < parameters.layerCount; i = i + 1u) {
+    let opIndex = layerOrder[parameters.layerStart + i];
+    executeOperation(base, opIndex);
+  }
+}
+
+@compute @workgroup_size(64)
+fn advanceState(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let sample = invocation.x;
+  if (sample >= parameters.count) {return;}
+  let sourceBase = sample * parameters.sourceSize;
+  let base = sample * parameters.width;
+  for (var i = 0u; i < parameters.sourceSize; i = i + 1u) {
+    sources[sourceBase + i] = values[base + stateWires[i]];
+  }
+}
+`

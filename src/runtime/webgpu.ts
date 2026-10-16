@@ -14,6 +14,7 @@ export type WebGpuOptions = {
   device?: GPUDevice
   mode?: 'auto' | 'gpu' | 'cpu'
   capacity?: number
+  strategy?: 'monolithic' | 'layers'
 }
 
 type PackedCircuit = {
@@ -27,6 +28,7 @@ function serialize(circuit: Circuit): PackedCircuit {
   const opView = new DataView(operations)
   const terms: [number, number][] = []
   const candidates: number[] = []
+  const tableOffsets = new Map<number, number>()
   for (let index = 0; index < circuit.operations.length; index++) {
     const operation = circuit.operations[index]!
     const start = index * operationStride
@@ -34,9 +36,19 @@ function serialize(circuit: Circuit): PackedCircuit {
     for (const [wire, coefficient] of operation.leftTerms) terms.push([wire, Math.fround(coefficient)])
     const gateStart = terms.length
     for (const [wire, coefficient] of operation.gateTerms) terms.push([wire, Math.fround(coefficient)])
-    const candidateStart = candidates.length
     const table = operation.indexRead?.table.candidates ?? []
-    for (const wire of table) candidates.push(wire)
+    let candidateStart = 0
+    if (operation.indexRead !== undefined) {
+      const tableId = operation.indexRead.table.id
+      const reused = tableOffsets.get(tableId)
+      if (reused !== undefined) {
+        candidateStart = reused
+      } else {
+        candidateStart = candidates.length
+        tableOffsets.set(tableId, candidateStart)
+        for (const wire of table) candidates.push(wire)
+      }
+    }
     const kind = {affine: 0, reglu: 1, boolean: 2, index: 3}[operation.kind]
     const fields: readonly (readonly [number, number])[] = [
       [0, kind], [4, leftStart], [8, operation.leftTerms.length],
@@ -67,10 +79,15 @@ export class WebGpuCircuitEvaluator {
   readonly capacity: number
   readonly sourceSize: number
   readonly width: number
+  readonly strategy: 'monolithic' | 'layers'
+  readonly layerCount: number
+  private readonly layerRanges: {start: number, count: number}[]
+  private readonly layerIndices: Uint32Array
   private count = 0
   private hasRun = false
   private disposed = false
   private loss: string | null = null
+  fallbackReason: string | null = null
   private readonly buffers: GPUBuffer[] = []
   private sourceBuffer?: GPUBuffer
   private valueBuffer?: GPUBuffer
@@ -79,12 +96,33 @@ export class WebGpuCircuitEvaluator {
   private bindGroup?: GPUBindGroup
   private executePipeline?: GPUComputePipeline
   private advancePipeline?: GPUComputePipeline
+  private loadPipeline?: GPUComputePipeline
+  private layerPipeline?: GPUComputePipeline
+  private readonly layerUniforms: GPUBuffer[] = []
+  private readonly layerGroups: GPUBindGroup[] = []
   private sources: Float32Array
   private values: Float32Array
 
   private constructor(private readonly circuit: Circuit,
-    private readonly device: GPUDevice | undefined, capacity: number) {
+    private readonly device: GPUDevice | undefined, capacity: number,
+    strategy: 'monolithic' | 'layers') {
     this.capacity = capacity
+    this.strategy = strategy
+    const depthMap = new Map<number, number[]>()
+    for (let index = 0; index < circuit.operations.length; index++) {
+      const operation = circuit.operations[index]!
+      const list = depthMap.get(operation.depth) ?? []
+      list.push(index)
+      depthMap.set(operation.depth, list)
+    }
+    const indices: number[] = []
+    this.layerRanges = Array.from(depthMap).sort(([a], [b]) => a - b).map(([, group]) => {
+      const range = {start: indices.length, count: group.length}
+      indices.push(...group)
+      return range
+    })
+    this.layerIndices = Uint32Array.from(indices.length > 0 ? indices : [0])
+    this.layerCount = this.layerRanges.length
     this.mode = device ? 'gpu' : 'cpu'
     this.sourceSize = circuit.sourceSize
     this.width = circuit.sourceSize + circuit.operations.length
@@ -94,19 +132,38 @@ export class WebGpuCircuitEvaluator {
 
   static async create(circuit: Circuit, options: WebGpuOptions = {}): Promise<WebGpuCircuitEvaluator> {
     const capacity = options.capacity ?? 256
+    const strategy = options.strategy ?? 'monolithic'
     invariant(Number.isSafeInteger(capacity) && capacity > 0, 'capacity must be a positive integer')
     const width = circuit.sourceSize + circuit.operations.length
     invariant(width > 0, 'cannot execute an empty circuit')
     invariant(width * capacity <= 0x3fffffff, 'batch exceeds supported buffer size')
-    let device = options.device
+    let device = options.mode === 'cpu' ? undefined : options.device
+    let fallbackReason: string | null = null
     if (options.mode !== 'cpu' && device === undefined) {
-      const gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined
-      const adapter = gpu === undefined ? null : await gpu.requestAdapter()
-      device = (await adapter?.requestDevice()) ?? undefined
+      try {
+        const gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined
+        const adapter = gpu === undefined ? null : await gpu.requestAdapter()
+        device = (await adapter?.requestDevice()) ?? undefined
+        if (device === undefined) fallbackReason = 'WebGPU adapter/device unavailable'
+      } catch (error) {
+        if (options.mode === 'gpu') throw error
+        fallbackReason = String(error)
+      }
     }
-    if (!device && options.mode === 'gpu') throw new Error('WebGPU adapter/device unavailable')
-    const evaluator = new WebGpuCircuitEvaluator(circuit, device, capacity)
-    if (device) await evaluator.initializeGpu(device)
+    if (device === undefined && options.mode === 'gpu') throw new Error('WebGPU adapter/device unavailable')
+    const evaluator = new WebGpuCircuitEvaluator(circuit, device, capacity, strategy)
+    evaluator.fallbackReason = fallbackReason
+    if (device !== undefined) {
+      try {
+        await evaluator.initializeGpu(device)
+      } catch (error) {
+        evaluator.destroy()
+        if (options.mode === 'gpu') throw error
+        const fallback = new WebGpuCircuitEvaluator(circuit, undefined, capacity, strategy)
+        fallback.fallbackReason = String(error)
+        return fallback
+      }
+    }
     return evaluator
   }
 
@@ -122,24 +179,27 @@ export class WebGpuCircuitEvaluator {
     const sourceBytes = this.capacity * this.sourceSize * 4
     const valueBytes = this.capacity * this.width * 4
     for (const bytes of [sourceBytes, valueBytes, packed.operations.byteLength,
-      packed.terms.byteLength, packed.candidates.byteLength, this.sourceSize * 4]) {
+      packed.terms.byteLength, packed.candidates.byteLength, this.sourceSize * 4,
+      this.layerIndices.byteLength]) {
       if (Math.max(4, bytes) > device.limits.maxStorageBufferBindingSize ||
         Math.max(4, bytes) > device.limits.maxBufferSize) {
         throw new Error('GPU storage binding limit exceeded; use a smaller capacity')
       }
     }
-    this.parameterBuffer = this.buffer(16, Usage.UNIFORM | Usage.COPY_DST)
+    this.parameterBuffer = this.buffer(32, Usage.UNIFORM | Usage.COPY_DST)
     this.sourceBuffer = this.buffer(sourceBytes, Usage.STORAGE | Usage.COPY_DST)
     this.valueBuffer = this.buffer(valueBytes, Usage.STORAGE | Usage.COPY_SRC)
     const operationBuffer = this.buffer(packed.operations.byteLength, Usage.STORAGE | Usage.COPY_DST)
     const termBuffer = this.buffer(packed.terms.byteLength, Usage.STORAGE | Usage.COPY_DST)
     const candidateBuffer = this.buffer(packed.candidates.byteLength, Usage.STORAGE | Usage.COPY_DST)
     this.stateBuffer = this.buffer(this.sourceSize * 4, Usage.STORAGE | Usage.COPY_DST)
+    const layerOrderBuffer = this.buffer(this.layerIndices.byteLength, Usage.STORAGE | Usage.COPY_DST)
     const gpuBuffers = [this.parameterBuffer, this.sourceBuffer, this.valueBuffer,
-      operationBuffer, termBuffer, candidateBuffer, this.stateBuffer]
+      operationBuffer, termBuffer, candidateBuffer, this.stateBuffer, layerOrderBuffer]
     device.queue.writeBuffer(operationBuffer, 0, packed.operations)
     device.queue.writeBuffer(termBuffer, 0, packed.terms)
     device.queue.writeBuffer(candidateBuffer, 0, packed.candidates)
+    device.queue.writeBuffer(layerOrderBuffer, 0, this.layerIndices)
     const module = device.createShaderModule({code: circuitWgsl, label: 'Handwired operation interpreter'})
     const messages = (await module.getCompilationInfo()).messages.filter(message => message.type === 'error')
     if (messages.length) throw new Error('WGSL compilation failed: ' +
@@ -155,15 +215,38 @@ export class WebGpuCircuitEvaluator {
     this.advancePipeline = await device.createComputePipelineAsync({
       layout: pipelineLayout, compute: {module, entryPoint: 'advanceState'},
     })
+    if (this.strategy === 'layers') {
+      this.loadPipeline = await device.createComputePipelineAsync({
+        layout: pipelineLayout, compute: {module, entryPoint: 'loadSources'},
+      })
+      this.layerPipeline = await device.createComputePipelineAsync({
+        layout: pipelineLayout, compute: {module, entryPoint: 'executeLayer'},
+      })
+    }
     this.bindGroup = device.createBindGroup({
       layout,
       entries: gpuBuffers.map((buffer, binding) => ({binding, resource: {buffer}})),
     })
+    if (this.strategy === 'layers') {
+      for (const range of this.layerRanges) {
+        const uniform = this.buffer(32, Usage.UNIFORM | Usage.COPY_DST)
+        this.layerUniforms.push(uniform)
+        this.layerGroups.push(device.createBindGroup({layout,
+          entries: [uniform, ...gpuBuffers.slice(1)].map((buffer, binding) => ({binding, resource: {buffer}})),
+        }))
+        device.queue.writeBuffer(uniform, 0, new Uint32Array([
+          0, this.sourceSize, this.width, this.circuit.operations.length, range.start, range.count, 0, 0,
+        ]))
+      }
+    }
     void device.lost.then(info => {this.loss = info.message.length > 0 ? info.message : info.reason})
   }
 
   private ensureActive(): void {
     if (this.disposed) throw new Error('WebGPU evaluator already destroyed')
+    if (this.circuit.operations.length + this.sourceSize !== this.width) {
+      throw new Error('circuit operation count changed after backend initialization')
+    }
     if (this.loss !== null) throw new Error('WebGPU device lost: ' + this.loss)
   }
 
@@ -182,7 +265,14 @@ export class WebGpuCircuitEvaluator {
     if (this.device) {
       if (input.byteLength) this.device.queue.writeBuffer(this.sourceBuffer!, 0, input)
       this.device.queue.writeBuffer(this.parameterBuffer!, 0,
-        new Uint32Array([count, this.sourceSize, this.width, this.circuit.operations.length]))
+        new Uint32Array([count, this.sourceSize, this.width, this.circuit.operations.length, 0, 0, 0, 0]))
+      for (let i = 0; i < this.layerRanges.length && this.strategy === 'layers'; i++) {
+        const range = this.layerRanges[i]!
+        this.device.queue.writeBuffer(this.layerUniforms[i]!, 0, new Uint32Array([
+          count, this.sourceSize, this.width, this.circuit.operations.length,
+          range.start, range.count, 0, 0,
+        ]))
+      }
     } else {
       this.sources.set(input)
     }
@@ -207,11 +297,26 @@ export class WebGpuCircuitEvaluator {
       if (this.sourceSize) this.device.queue.writeBuffer(this.stateBuffer!, 0, wires)
       const encoder = this.device.createCommandEncoder()
       for (let iteration = 0; iteration < steps; iteration++) {
-        const pass = encoder.beginComputePass()
-        pass.setPipeline(this.executePipeline!)
-        pass.setBindGroup(0, this.bindGroup!)
-        pass.dispatchWorkgroups(Math.ceil(this.count / workgroupSize))
-        pass.end()
+        if (this.strategy === 'layers') {
+          const loadPass = encoder.beginComputePass()
+          loadPass.setPipeline(this.loadPipeline!)
+          loadPass.setBindGroup(0, this.bindGroup!)
+          loadPass.dispatchWorkgroups(Math.ceil(this.count / workgroupSize))
+          loadPass.end()
+          for (let i = 0; i < this.layerRanges.length; i++) {
+            const layerPass = encoder.beginComputePass()
+            layerPass.setPipeline(this.layerPipeline!)
+            layerPass.setBindGroup(0, this.layerGroups[i]!)
+            layerPass.dispatchWorkgroups(Math.ceil(this.count / workgroupSize))
+            layerPass.end()
+          }
+        } else {
+          const pass = encoder.beginComputePass()
+          pass.setPipeline(this.executePipeline!)
+          pass.setBindGroup(0, this.bindGroup!)
+          pass.dispatchWorkgroups(Math.ceil(this.count / workgroupSize))
+          pass.end()
+        }
         if (stateUpdates.length > 0) {
           const statePass = encoder.beginComputePass()
           statePass.setPipeline(this.advancePipeline!)

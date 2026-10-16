@@ -96,8 +96,65 @@ describe('reusable circuit evaluator', () => {
     expect(() => evaluator.load(sampleInputs(1))).toThrow()
   })
 
+  test('both schedulers preserve source-only and zero-operation circuits', async () => {
+    const circuit = new Circuit(3)
+    const source = Float32Array.from([1, -0, 5, -5, 7, 3])
+    for (const strategy of ['monolithic', 'layers'] as const) {
+      const evaluator = await createWebGpuEvaluator(circuit, {mode: 'cpu', capacity: 2, strategy})
+      try {
+        expect(evaluator.layerCount).toBe(0)
+        const values = await evaluator.evaluate(source, {steps: 7})
+        expect(Array.from(values)).toEqual(Array.from(source))
+      } finally {
+        evaluator.destroy()
+      }
+    }
+  })
+
+  test('capacity, empty operations, lifecycle and step count are validated', async () => {
+    const mustReject = async (action: () => Promise<unknown>) => {
+      let rejected = false
+      try {await action()} catch {rejected = true}
+      expect(rejected).toBe(true)
+    }
+    const {circuit} = mixedCircuit()
+    await mustReject(() => createWebGpuEvaluator(circuit, {capacity: 0, mode: 'cpu'}))
+    const evaluator = await createWebGpuEvaluator(circuit, {mode: 'cpu', capacity: 3, strategy: 'layers'})
+    try {
+      expect(evaluator.layerCount).toBeGreaterThan(0)
+      await mustReject(() => evaluator.readValues())
+      evaluator.load(sampleInputs(1))
+      await mustReject(() => evaluator.run(0))
+      await evaluator.run(2)
+      expect((await evaluator.readValues()).length).toBe(circuit.sourceSize + circuit.operations.length)
+      circuit.roundAffine([[circuit.source(0), 1]])
+      expect(() => evaluator.load(sampleInputs(1))).toThrow('circuit operation count changed')
+    } finally {
+      evaluator.destroy()
+      evaluator.destroy()
+    }
+  })
+
+  test('randomized CPU reference differential across 256 independent instances', async () => {
+    const {circuit} = mixedCircuit()
+    const source = sampleInputs(256)
+    const evaluator = await createWebGpuEvaluator(circuit, {mode: 'cpu', capacity: 256, strategy: 'layers'})
+    try {
+      const values = await evaluator.evaluate(source)
+      const width = circuit.sourceSize + circuit.operations.length
+      for (let i = 0; i < 256; i++) {
+        const expected = circuit.evaluateReference(source.subarray(i * 5, i * 5 + 5))
+        for (let w = 0; w < width; w++) {
+          expect(values[i * width + w]).toBe(expected[w])
+        }
+      }
+    } finally {
+      evaluator.destroy()
+    }
+  })
+
   test('shader contains generic interpreter and state-update kernels', () => {
-    for (const token of ['fn execute', 'fn advanceState', 'op.kind == 1u',
+    for (const token of ['fn execute', 'fn executeLayer', 'fn loadSources', 'fn advanceState', 'op.kind == 1u',
       'op.kind == 2u', 'op.kind == 3u', 'fn affine']) {
       expect(circuitWgsl.includes(token)).toBe(true)
     }
