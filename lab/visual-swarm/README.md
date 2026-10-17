@@ -38,3 +38,9 @@ bunx oxlint --type-aware lab/visual-swarm scripts/serve-visual-swarm.ts
 ```
 
 For a project-specific WebGPU smoke test run the browser at `/?smoke=1&count=128` in real GPU mode, wait until eight frames complete, and capture the `#smoke` JSON. Preserve adapter, browser, mismatch count and timing in an evidence artifact.
+
+## Verified visual and hardware evidence
+
+![Actual headless Chrome Intel UHD WebGPU demonstration, October 17, 2026](results/2026-10-17-dell-webgpu-qa.png)
+
+[View the machine-readable Intel UHD Graphics WebGPU correctness report](results/2026-10-17-dell-webgpu-qa.json). This captured screenshot is of the real application running eight verification frames, not a generated illustration. The evidence establishes full-wire numerical agreement on the tested hardware only; it is not proof of a performance speedup or of hardware behavior on every adapter.
