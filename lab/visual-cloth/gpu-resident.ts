@@ -165,6 +165,45 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
  next[i]=mask;
 }`
 
+
+const clothDisplayWgsl=`
+struct View { viewport:vec2<f32>, columns:u32,rows:u32 }
+@group(0) @binding(0) var<storage,read> points:array<f32>;
+@group(0) @binding(1) var<storage,read> cuts:array<u32>;
+@group(0) @binding(2) var<uniform> view:View;
+struct VertexOut{@builtin(position) pos:vec4<f32>,@location(0) color:vec4<f32>}
+@vertex fn vs(@builtin(vertex_index) v:u32,@builtin(instance_index) instance:u32)->VertexOut {
+  let i=instance/2u;let vertical=instance%2u==1u;
+  let x=i%view.columns;let y=i/view.columns;
+  let edgeValid=select(x+1u<view.columns,y+1u<view.rows,vertical);
+  let broken=(cuts[i] & select(2u,8u,vertical))!=0u;
+  let j=i+select(1u,view.columns,vertical);
+  var start=vec2<f32>(points[i*4u],points[i*4u+1u]);
+  var end=select(vec2<f32>(points[j*4u],points[j*4u+1u]),start,
+    !edgeValid||broken);
+  let diff=end-start;
+  let dist=length(diff);
+  let direction=select(vec2<f32>(1.0,0.0),diff/max(0.00001,dist),dist>0.00001);
+  let normal=vec2<f32>(-direction.y,direction.x)*1.0/max(view.viewport,vec2<f32>(1.0));
+  var uv:vec2<f32>;
+  switch(v){
+   case 0u:{uv=start-normal;}case 1u:{uv=end-normal;}
+   case 2u:{uv=start+normal;}case 3u:{uv=start+normal;}
+   case 4u:{uv=end-normal;}default:{uv=end+normal;}
+  }
+  var out:VertexOut;
+  out.pos=vec4<f32>(uv.x*2.0-1.0,1.0-uv.y*2.0,0.0,1.0);
+  let tension=dist/max(0.00001,select(0.78/f32(view.columns-1u),0.59/f32(view.rows-1u),vertical));
+  out.color=select(vec4<f32>(0.45,0.87,0.92,0.86),
+     vec4<f32>(1.0,0.71,0.43,0.95),tension>1.28);
+  if(!edgeValid||broken){out.color.a=0.0;}
+  return out;
+}
+@fragment fn fs(@location(0) color:vec4<f32>)->@location(0) vec4<f32>{
+ return color;
+}
+`
+
 export const clothGpuWgsl={integrateWGSL,constraintWGSL,tearWGSL}
 export type ClothIntegrationKernel = 'handwired'|'handwritten'
 export class ResidentClothGpu {
@@ -182,6 +221,10 @@ export class ResidentClothGpu {
   private readonly integrations:[GPUBindGroup,GPUBindGroup]
   private readonly constraints:[GPUBindGroup,GPUBindGroup]
   private readonly tearGroups:[GPUBindGroup,GPUBindGroup]
+  private displayContext:GPUCanvasContext|null=null
+  private displayPipeline:GPURenderPipeline|null=null
+  private displayGroups:GPUBindGroup[]=[]
+  private displayView:GPUBuffer|null=null
   private stateParity=0
   private tearParity=0
   private disposed=false
@@ -277,7 +320,40 @@ export class ResidentClothGpu {
     v.setFloat32(48,.59/(this.height-1),true)
     this.device.queue.writeBuffer(this.params,0,bytes)
   }
-  async step(interaction:ClothPointer={}){
+  async attachCanvas(canvas:HTMLCanvasElement){
+    this.ensure()
+    const context=canvas.getContext('webgpu') as GPUCanvasContext|null
+    if(!context)throw new Error('WebGPU cloth canvas unavailable')
+    const format=navigator.gpu.getPreferredCanvasFormat()
+    context.configure({device:this.device,format,alphaMode:'opaque'})
+    const viewport=this.device.createBuffer({size:16,usage:Usage.UNIFORM|Usage.COPY_DST})
+    try {
+      const shader=this.device.createShaderModule({code:clothDisplayWgsl})
+      const errors=(await shader.getCompilationInfo()).messages.filter(e=>e.type==='error')
+      if(errors.length)throw new Error('cloth render WGSL: '+errors.map(e=>e.message).join('; '))
+      const pipeline=await this.device.createRenderPipelineAsync({
+        layout:'auto',vertex:{module:shader,entryPoint:'vs'},
+        fragment:{module:shader,entryPoint:'fs',targets:[{
+          format,blend:{color:{srcFactor:'src-alpha',dstFactor:'one-minus-src-alpha',operation:'add'},
+            alpha:{srcFactor:'one',dstFactor:'one-minus-src-alpha',operation:'add'}},
+        }]},primitive:{topology:'triangle-list'},
+      })
+      const bind=(state:GPUBuffer,mask:GPUBuffer)=>this.device.createBindGroup({
+        layout:pipeline.getBindGroupLayout(0),entries:[
+          {binding:0,resource:{buffer:state}},
+          {binding:1,resource:{buffer:mask}},
+          {binding:2,resource:{buffer:viewport}},
+        ],
+      })
+      this.displayGroups=[
+        bind(this.state[0],this.tear[0]),bind(this.state[0],this.tear[1]),
+        bind(this.state[1],this.tear[0]),bind(this.state[1],this.tear[1]),
+      ]
+      this.displayContext=context;this.displayView=viewport;this.displayPipeline=pipeline
+    }catch(error){viewport.destroy();context.unconfigure();throw error}
+  }
+  frame(interaction:ClothPointer={}){
+
     this.ensure();if(!this.loaded)throw new Error('load cloth before stepping')
     this.setParams(interaction)
     const encoder=this.device.createCommandEncoder()
@@ -313,9 +389,28 @@ export class ResidentClothGpu {
       dispatch(this.constrain,create(this.constrain,this.state[parity],this.state[1-parity]))
       parity=1-parity
     }
+    if(this.displayContext!==null&&this.displayPipeline!==null&&this.displayView!==null){
+      const surface=this.displayContext.getCurrentTexture()
+      const dims=new ArrayBuffer(16),v=new DataView(dims)
+      v.setFloat32(0,surface.width,true);v.setFloat32(4,surface.height,true)
+      v.setUint32(8,this.width,true);v.setUint32(12,this.height,true)
+      this.device.queue.writeBuffer(this.displayView,0,dims)
+      const render=encoder.beginRenderPass({colorAttachments:[{
+        view:surface.createView(),loadOp:'clear',storeOp:'store',
+        clearValue:{r:0.025,g:0.06,b:0.10,a:1},
+      }]})
+      render.setPipeline(this.displayPipeline)
+      render.setBindGroup(0,this.displayGroups[parity*2+this.tearParity]!)
+      render.draw(6,this.count*2)
+      render.end()
+    }
     this.device.queue.submit([encoder.finish()])
-    await this.device.queue.onSubmittedWorkDone()
     this.stateParity=parity;this.steps++;this.ensure()
+  }
+  async step(interaction:ClothPointer={}){
+    this.frame(interaction)
+    await this.device.queue.onSubmittedWorkDone()
+    this.ensure()
   }
   async read():Promise<Float32Array>{
     this.ensure();if(!this.loaded)throw new Error('load cloth before reading')
@@ -343,5 +438,5 @@ export class ResidentClothGpu {
       staging.unmap();return masks
     }finally{staging.destroy()}
   }
-  destroy(){if(this.disposed)return;this.disposed=true;for(const buffer of this.buffers)buffer.destroy()}
+  destroy(){if(this.disposed)return;this.disposed=true;this.displayView?.destroy();this.displayContext?.unconfigure();for(const buffer of this.buffers)buffer.destroy()}
 }
