@@ -1,7 +1,9 @@
 import {Circuit} from '../src/runtime/numeric-ui-core.ts'
 import {createWebGpuEvaluator} from '../src/runtime/webgpu.ts'
 
-const count = 8192
+const requestedCount = Number(new URLSearchParams(location.search).get('count') ?? 8192)
+const count = Number.isSafeInteger(requestedCount) && requestedCount >= 1 && requestedCount <= 8192
+  ? requestedCount : 8192
 const canvas = document.querySelector<HTMLCanvasElement>('#swarm')!
 const context = canvas.getContext('2d')!
 const status = document.querySelector<HTMLElement>('#status')!
@@ -99,6 +101,7 @@ async function compare() {
   const jsMs = performance.now() - beganJs
 
   const startedGpuInit = performance.now()
+  status.textContent='GPU monolithic: compiling and executing'
   const gpu = await createWebGpuEvaluator(circuit, {mode: 'gpu', capacity: count})
   const gpuInitMs = performance.now() - startedGpuInit
   const beganGpu = performance.now()
@@ -106,6 +109,7 @@ async function compare() {
   const gpuMs = performance.now() - beganGpu
   gpu.destroy()
   const startedLayerInit = performance.now()
+  status.textContent='GPU dependency layers: compiling and executing'
   const layered = await createWebGpuEvaluator(circuit, {mode: 'gpu', capacity: count, strategy: 'layers'})
   const layeredInitMs = performance.now() - startedLayerInit
   const beganLayered = performance.now()
@@ -114,6 +118,7 @@ async function compare() {
   const layerCount = layered.layerCount
   layered.destroy()
   const specializedStartInit = performance.now()
+  status.textContent='GPU specialized: compiling and executing'
   const specialized = await createWebGpuEvaluator(circuit,
     {mode:'gpu',capacity:count,strategy:'specialized'})
   const specializedInitMs = performance.now()-specializedStartInit
@@ -126,6 +131,7 @@ async function compare() {
   if(!nativeAdapter)throw new Error('WebGPU missing for conventional baseline')
   const nativeDevice=await nativeAdapter.requestDevice()
   const nativeInitAt=performance.now()
+  status.textContent='Independent handwritten WebGPU baseline: compiling and executing'
   const nativeGpu=await HandwrittenSwarmGpu.create(nativeDevice,count)
   const nativeGpuInitMs=performance.now()-nativeInitAt
   const nativeStarted=performance.now()
@@ -145,6 +151,7 @@ async function compare() {
     if (difference > 0.00002 || layerDifference > 0.00002 || specializedDifference > 0.00002) mismatches++
     maxDifference = Math.max(maxDifference, difference, layerDifference, specializedDifference)
   }
+  status.textContent='Rendering and checking all GPU baselines'
   draw(cpuValues, gpuValues)
   results.textContent = 'Particles: ' + count.toLocaleString()
     + ' · Steps: ' + steps + ' · CPU: ' + cpuMs.toFixed(2) + ' ms'
@@ -453,5 +460,11 @@ if (new URLSearchParams(location.search).has('smoke')) {
     document.body.dataset.status = 'fail'
   })
 } else if (!new URLSearchParams(location.search).has('probe')) {
-  void compare().catch(error => {status.textContent = String(error); runButton.disabled = false})
+  void compare().catch(error => {
+    const lastStage=status.textContent
+    status.textContent=String(error)
+    smoke.textContent=JSON.stringify({ok:false,error:String(error),lastStage})
+    document.body.dataset.status='fail'
+    runButton.disabled=false
+  })
 }
