@@ -42,3 +42,9 @@ bun scripts/verify-visual-fluid-browser.ts lab/visual-fluid/results/webgpu.json 
 Capture a real hardware adapter name, numeric error, CPU comparison, exit code and screenshots before making public performance claims. The local browser smoke rejects SwiftShader, llvmpipe and all CPU fallbacks.
 
 Next: eliminate per-frame readback using GPU-resident advection + pressure + dye kernels, add divergence and conservation tests, and compare to a handwritten WGSL numerical baseline.
+
+## Verified visual and hardware evidence
+
+![Actual headless Chrome Intel UHD WebGPU demonstration, October 17, 2026](results/2026-10-17-dell-webgpu-qa.png)
+
+[View the machine-readable Intel UHD Graphics WebGPU correctness report](results/2026-10-17-dell-webgpu-qa.json). This captured screenshot is of the real application running eight verification frames, not a generated illustration. The evidence establishes full-wire numerical agreement on the tested hardware only; it is not proof of a performance speedup or of hardware behavior on every adapter.
