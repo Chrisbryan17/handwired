@@ -47,6 +47,7 @@ def main():
         'https://github.com/Chrisbryan17/handwired.git',str(ROOT)],180):return 2
     execute('revision',['git','rev-parse','HEAD'],15,True,ROOT)
     bun=install_bun()
+    os.environ['PATH']=str(pathlib.Path(bun).parent)+os.pathsep+os.environ.get('PATH','')
     if not execute('dependencies',[bun,'install','--frozen-lockfile'],600,cwd=ROOT):return 3
     checks=[
         execute('targeted',[bun,'test','--timeout','30000','./tests/runtime/webgpu.test.ts',

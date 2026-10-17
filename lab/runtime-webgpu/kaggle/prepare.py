@@ -12,7 +12,7 @@ metadata={
   'id':username+'/handwired-webgpu-batch',
   'title':'Handwired WebGPU Batch',
   'code_file':'runner.py','language':'python','kernel_type':'script',
-  'is_private':True,'enable_gpu':True,'enable_internet':True,
+  'is_private':'true','enable_gpu':'true','enable_internet':'true',
   'dataset_sources':[],'competition_sources':[],'kernel_sources':[],'model_sources':[]
 }
 (root/'kernel-metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
