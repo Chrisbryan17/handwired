@@ -214,7 +214,7 @@ export class ResidentClothGpu {
       for(let i=0;i<codes.length;i++){
         const shader=gpu.createShaderModule({code:codes[i]!,label:'Handwired resident cloth '+i})
         const errors=(await shader.getCompilationInfo()).messages.filter(e=>e.type==='error')
-        if(errors.length)throw new Error('cloth WGSL '+i+': '+errors.map(e=>e.message).join('; '))
+        if(errors.length)throw new Error('cloth WGSL '+i+': '+errors.map(e=>e.lineNum+':'+e.linePos+' '+e.message+' [ '+(codes[i]!.split('\\n')[e.lineNum-1]??'')+' ]').join('; '))
         pipelines.push(await gpu.createComputePipelineAsync({
           layout:'auto',compute:{module:shader,entryPoint:'main'},
         }))
