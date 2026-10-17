@@ -10,7 +10,8 @@ async function run(){
   const engine=await ResidentClothGpu.create(cloth)
   const setupMs=performance.now()-start
   try{
-    engine.load(cloth)
+    const initial=cloth
+    engine.load(initial)
     await engine.attachCanvas(canvas)
     const t=performance.now()
     for(let i=0;i<frames;i++)engine.frame({wind:1.2})
@@ -24,10 +25,24 @@ async function run(){
       if(cloth.pinned[i]===1&&
         (Math.abs(x-cloth.origin[i*2]!)>1e-6||Math.abs(y-cloth.origin[i*2+1]!)>1e-6))pinnedErrors++
     }
-    const ok=nonfinite===0&&outOfBounds===0&&pinnedErrors===0
+    engine.load(initial)
+    const baselineStarted=performance.now()
+    let baseline:Float32Array|undefined
+    for(let i=0;i<frames;i++){
+      await engine.step({wind:1.2})
+      baseline=await engine.read()
+    }
+    const baselineWallMs=performance.now()-baselineStarted
+    let maxParityError=0
+    for(let i=0;i<values.length;i++){
+      maxParityError=Math.max(maxParityError,Math.abs(values[i]!-baseline![i]!))
+    }
+    const baselineMsPerFrame=baselineWallMs/frames
+    const speedup=baselineWallMs/wallMs
+    const ok=nonfinite===0&&outOfBounds===0&&pinnedErrors===0&&maxParityError<1e-5
     const report={ok,mode:'gpu',frames,count:columns*rows,checked:values.length,
       mismatches:nonfinite+outOfBounds+pinnedErrors,nonfinite,outOfBounds,pinnedErrors,
-      setupMs,wallMs,msPerFrame:wallMs/frames,
+      setupMs,wallMs,msPerFrame:wallMs/frames,baselineWallMs,baselineMsPerFrame,speedup,maxParityError,
       measurement:'GPU-resident cloth solver + direct mesh render + ONE final readback'}
     document.body.dataset.status=ok?'pass':'fail'
     document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify(report)
