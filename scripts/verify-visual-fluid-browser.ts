@@ -76,7 +76,7 @@ async function run() {
   try {
     await command('Page.enable')
     await command('Runtime.enable')
-    await command('Page.navigate',{url:'http://127.0.0.1:39082/?smoke=1&count='+count})
+    await command('Page.navigate',{url:'http://127.0.0.1:39082/?smoke=1&count='+count+(process.argv.includes('--resident')?'&resident=1':'')})
     let smoke: Record<string,unknown> | null = null
     for(let k=0;k<240;k++) {
       await delay(250)
