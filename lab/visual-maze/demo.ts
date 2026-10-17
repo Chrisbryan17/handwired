@@ -1,6 +1,6 @@
 import {createWebGpuEvaluator,type WebGpuCircuitEvaluator} from '../../src/runtime/webgpu.ts'
 import {buildMazeCircuit, MAZE_SOURCE_SIZE} from './model.ts'
-import {beginSearch,circuitWave,cpuCircuitWave,generateMaze,mazeInputs,
+import {beginSearch,circuitWave,generateMaze,mazeInputs,
   reconstructPath,referenceWave,type Maze,type SearchState} from './engine.ts'
 
 const params=new URLSearchParams(location.search),smoke=params.get('smoke')==='1'
@@ -16,7 +16,7 @@ const put=(id:string,value:string)=>{document.getElementById(id)!.textContent=va
 let seed=1849,maze:Maze=generateMaze(),cpu:SearchState=beginSearch(maze),gpu:SearchState=beginSearch(maze)
 let evaluator:WebGpuCircuitEvaluator|null=null
 let frame=0,paused=false,restartRequested=true,stepRequested=false
-let differences=0,maxError=0,checked=0,watch=0
+let differences=0,maxError=0,checked=0
 let cpuMs=0,gpuMs=0
 const hues={wall:'#080c1d',unseen:'#151d39',seen:'#273d70',
   frontier:'#96f5d2',goal:'#ffb56e',start:'#fff7cf',path:'#e8cc6a'}
@@ -49,7 +49,7 @@ async function restart(){
   const cols=Number(size.value),rows=cols===31?21:cols===61?39:31
   maze=generateMaze(cols,rows,seed++)
   cpu=beginSearch(maze);gpu=beginSearch(maze)
-  frame=0;differences=0;maxError=0;checked=0;watch=0
+  frame=0;differences=0;maxError=0;checked=0
   status.textContent='Compiling neural wavefront expansion…'
   evaluator=await createWebGpuEvaluator(circuit,{
     mode:smoke?'gpu':'auto',capacity:maze.walls.length,
