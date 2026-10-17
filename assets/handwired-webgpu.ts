@@ -310,6 +310,7 @@ async function smokeTest() {
   const gallerySource = Float32Array.from(gallery.initialSource)
   const galleryExpected = gallery.circuit.evaluateReference(gallerySource)
   let galleryMismatches = 0, galleryBitMismatches = 0, galleryMaxError = 0
+  const galleryMismatchExamples: {strategy:string,wire:number,kind:string,expected:string,actual:string}[]=[]
   let galleryLayerCount = 0
   for (const strategy of ['monolithic', 'layers', 'specialized'] as const) {
     const galleryEvaluator = await createWebGpuEvaluator(gallery.circuit, {
@@ -324,7 +325,14 @@ async function smokeTest() {
         const difference = Math.abs(expected - got)
         if (Number.isFinite(difference)) galleryMaxError = Math.max(galleryMaxError, difference)
         if (!(Object.is(expected, got) ||
-          (Number.isFinite(difference) && difference <= 0.0001))) galleryMismatches++
+          (Number.isFinite(difference) && difference <= 0.0001))) {
+          galleryMismatches++
+          if (galleryMismatchExamples.length < 16) galleryMismatchExamples.push({
+            strategy,wire:i,kind:i<gallery.circuit.sourceSize?'source':
+              gallery.circuit.operations[i-gallery.circuit.sourceSize]?.kind??'unknown',
+            expected:String(expected),actual:String(got),
+          })
+        }
       }
     } finally {
       galleryEvaluator.destroy()
@@ -404,7 +412,7 @@ async function smokeTest() {
     specializedMismatches,specializedStateMismatches,gridMismatches,gridMaxError,
     fp32Edges,fallbackAdapterName,fallbackAdapterMismatches,galleryCacheHit,cachedGalleryInitMs,
     deviceLossCaught, galleryOperations: gallery.circuit.operations.length,
-    galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError,
+    galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError, galleryMismatchExamples,
     integratedOperations: integrated.circuit.operations.length,
     integratedLayerCount, integratedMismatches, integratedBitMismatches, integratedMaxError,
     mismatches, maxError, stateMismatches, stateMaxError, layerMismatches, layerStateMismatches,
