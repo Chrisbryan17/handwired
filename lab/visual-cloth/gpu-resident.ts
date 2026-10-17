@@ -166,6 +166,26 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
 }`
 
 
+
+const clothBackdropWgsl=`
+struct View { viewport:vec2<f32>, columns:u32,rows:u32 }
+@group(0) @binding(0) var<uniform> view:View;
+@vertex fn vs(@builtin(vertex_index) v:u32)->@builtin(position) vec4<f32>{
+ var p=array<vec2<f32>,3>(vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0));
+ return vec4<f32>(p[v],0.0,1.0);
+}
+@fragment fn fs(@builtin(position) pixel:vec4<f32>)->@location(0) vec4<f32>{
+ let center=vec2<f32>(view.viewport.x*0.5,view.viewport.y*0.78);
+ let radius=0.14*min(view.viewport.x,view.viewport.y);
+ let distanceToObstacle=length(pixel.xy-center);
+ let ring=1.0-smoothstep(1.5,3.5,abs(distanceToObstacle-radius));
+ let glow=1.0-smoothstep(radius*0.50,radius*2.0,distanceToObstacle);
+ let base=vec3<f32>(0.024,0.065,0.102);
+ return vec4<f32>(base+vec3<f32>(0.08,0.16,0.21)*glow+
+   vec3<f32>(0.37,0.62,0.78)*ring*0.7,1.0);
+}
+`
+
 const clothDisplayWgsl=`
 struct View { viewport:vec2<f32>, columns:u32,rows:u32 }
 @group(0) @binding(0) var<storage,read> points:array<f32>;
@@ -223,6 +243,8 @@ export class ResidentClothGpu {
   private readonly tearGroups:[GPUBindGroup,GPUBindGroup]
   private displayContext:GPUCanvasContext|null=null
   private displayPipeline:GPURenderPipeline|null=null
+  private backdropPipeline:GPURenderPipeline|null=null
+  private backdropGroup:GPUBindGroup|null=null
   private displayGroups:GPUBindGroup[]=[]
   private displayView:GPUBuffer|null=null
   private stateParity=0
@@ -338,6 +360,17 @@ export class ResidentClothGpu {
             alpha:{srcFactor:'one',dstFactor:'one-minus-src-alpha',operation:'add'}},
         }]},primitive:{topology:'triangle-list'},
       })
+      const backdropShader=this.device.createShaderModule({code:clothBackdropWgsl})
+      const bgErrors=(await backdropShader.getCompilationInfo()).messages.filter(e=>e.type==='error')
+      if(bgErrors.length)throw new Error('cloth background WGSL: '+bgErrors.map(e=>e.message).join('; '))
+      const backdrop=await this.device.createRenderPipelineAsync({
+        layout:'auto',vertex:{module:backdropShader,entryPoint:'vs'},
+        fragment:{module:backdropShader,entryPoint:'fs',targets:[{format}]},
+        primitive:{topology:'triangle-list'},
+      })
+      const bgGroup=this.device.createBindGroup({
+        layout:backdrop.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:viewport}}],
+      })
       const bind=(state:GPUBuffer,mask:GPUBuffer)=>this.device.createBindGroup({
         layout:pipeline.getBindGroupLayout(0),entries:[
           {binding:0,resource:{buffer:state}},
@@ -350,6 +383,7 @@ export class ResidentClothGpu {
         bind(this.state[1],this.tear[0]),bind(this.state[1],this.tear[1]),
       ]
       this.displayContext=context;this.displayView=viewport;this.displayPipeline=pipeline
+      this.backdropPipeline=backdrop;this.backdropGroup=bgGroup
     }catch(error){viewport.destroy();context.unconfigure();throw error}
   }
   frame(interaction:ClothPointer={}){
@@ -399,6 +433,11 @@ export class ResidentClothGpu {
         view:surface.createView(),loadOp:'clear',storeOp:'store',
         clearValue:{r:0.025,g:0.06,b:0.10,a:1},
       }]})
+      if(this.backdropPipeline!==null&&this.backdropGroup!==null){
+        render.setPipeline(this.backdropPipeline)
+        render.setBindGroup(0,this.backdropGroup)
+        render.draw(3)
+      }
       render.setPipeline(this.displayPipeline)
       render.setBindGroup(0,this.displayGroups[parity*2+this.tearParity]!)
       render.draw(6,this.count*2)
