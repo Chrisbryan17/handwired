@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "date": "2026-10-17T15:40:02.554Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "visual-swarm WebGPU eight-frame full-wire differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 8,
+  "count": 128,
+  "strategy": "specialized",
+  "circuitOperations": 6,
+  "totalChecked": 20480,
+  "mismatches": 0,
+  "maxError": 5.960464477539063e-8,
+  "cpuMs": 1.6000000089406967,
+  "gpuMs": 19.600000008940697
+}
