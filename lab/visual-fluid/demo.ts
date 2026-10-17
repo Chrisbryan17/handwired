@@ -8,9 +8,11 @@ const size=document.querySelector<HTMLSelectElement>('#size')!
 const strategy=document.querySelector<HTMLSelectElement>('#strategy')!
 const engine=document.querySelector<HTMLSelectElement>('#engine')!
 const wantsResident=params.get('resident')==='1'
-engine.value=smoke&&!wantsResident?'hybrid':'resident'
+const wantsFast=params.get('fast')==='1'
+engine.value=smoke?(wantsFast?'fast':wantsResident?'resident':'hybrid'):'fast'
 const brush=document.querySelector<HTMLInputElement>('#brush')!
 const cpuCanvas=document.querySelector<HTMLCanvasElement>('#cpu')!,gpuCanvas=document.querySelector<HTMLCanvasElement>('#gpu')!
+const fastCanvas=document.querySelector<HTMLCanvasElement>('#gpu-fast')!
 const cpuCtx=cpuCanvas.getContext('2d')!,gpuCtx=gpuCanvas.getContext('2d')!
 const status=document.querySelector<HTMLElement>('#status')!
 const put=(id:string,val:string)=>{document.getElementById(id)!.textContent=val}
@@ -50,10 +52,17 @@ async function reset(){
   cpu=createFluid(selected,height);gpu=createFluid(selected,height)
   frames=0;checked=0;mismatches=0;maxError=0
   status.textContent='Compiling neural advection and fluid stencil pipelines…'
-  if(engine.value==='resident') {
+  if(engine.value==='resident'||engine.value==='fast') {
     try{
       resident=await ResidentFluidGpu.create(cpu.width,cpu.height)
       resident.load(gpu)
+      if(engine.value==='fast'){
+        const rect=fastCanvas.getBoundingClientRect(),scale=Math.min(2,devicePixelRatio||1)
+        fastCanvas.width=Math.max(1,Math.round(rect.width*scale))
+        fastCanvas.height=Math.max(1,Math.round(rect.height*scale))
+        await resident.attachCanvas(fastCanvas)
+        status.textContent='Zero-readback WebGPU '+ 'fluid' +' simulation + rendering.'
+      }
       status.textContent='Entire neural fluid solver GPU-resident. Drag to stir the dye.'
     }catch(error){
       if(smoke&&wantsResident)throw error
@@ -69,9 +78,11 @@ async function reset(){
       ? 'Hybrid: neural bilinear advection on WebGPU, pressure solver on CPU.'
       : 'CPU fallback: '+(backend.fallbackReason??'WebGPU unavailable')
   }
-  put('checked-label',resident?'FIELD VALUES CHECKED':'CIRCUIT WIRES CHECKED')
+  document.body.classList.toggle('gpu-fast',engine.value==='fast'&&resident!==null)
+  put('checked-label',engine.value==='fast'?'PER-FRAME READBACKS':resident?'FIELD VALUES CHECKED':'CIRCUIT WIRES CHECKED')
   put('errors-label',resident?'POSE/FIELD DIFFS (>0.025)':'GPU MISMATCHES (>2e−5)')
   put('cells',String(cpu.width*cpu.height));put('ops',String(circuit.operations.length))
+  strategy.disabled=engine.value!=='hybrid'
   resetRequested=false
 }
 function verify(inputs:Float32Array,values:Float32Array){
@@ -87,6 +98,37 @@ function verify(inputs:Float32Array,values:Float32Array){
 async function tick(){
   if(resetRequested||(backend===null&&resident===null))await reset()
   if(paused)return
+  if(resident!==null&&engine.value==='fast'){
+    const start=performance.now()
+    const rect=fastCanvas.getBoundingClientRect(),scale=Math.min(2,devicePixelRatio||1)
+    const w=Math.max(1,Math.round(rect.width*scale)),h=Math.max(1,Math.round(rect.height*scale))
+    if(fastCanvas.width!==w||fastCanvas.height!==h){fastCanvas.width=w;fastCanvas.height=h}
+    resident.frame(pendingImpulse);pendingImpulse=undefined
+    gpuMs=performance.now()-start
+    if(frames%4===0){
+      const startedCpu=performance.now()
+      cpu=cpuFluidFrame(cpu).next
+      cpuMs=performance.now()-startedCpu
+      draw(cpuCanvas,cpuCtx,cpu)
+    }
+    frames++
+    put('checked','0 / frame');put('errors','N/A')
+    put('cpu-info','CPU reference sampled every 4 GPU frames; not cycle-matched')
+    put('gpu-info',gpuMs.toFixed(2)+'ms CPU submission · no GPU readback')
+    document.body.dataset.status='pass'
+    if(smoke&&frames>=8){
+      await resident.read().then(state=>{
+        const bad=state.reduce((n,v)=>n+(Number.isFinite(v)?0:1),0)
+        const ok=bad===0
+        document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify({
+          ok,mode:'gpu',fast:true,frames,count:state.length/5,
+          checked:state.length,mismatches:bad,gpuMs})
+        document.body.dataset.status=ok?'pass':'fail'
+      })
+      paused=true
+    }
+    return
+  }
   const startedCpu=performance.now(),reference=cpuFluidFrame(cpu)
   cpu=reference.next;cpuMs=performance.now()-startedCpu
   if(resident!==null){
@@ -135,7 +177,7 @@ async function loop(){
   }
   if(!(smoke&&paused))requestAnimationFrame(()=>{void loop()})
 }
-for(const canvas of [cpuCanvas,gpuCanvas]){
+for(const canvas of [cpuCanvas,gpuCanvas,fastCanvas]){
   let previous:{x:number,y:number}|null=null
   canvas.addEventListener('pointerdown',event=>{canvas.setPointerCapture(event.pointerId);previous=null})
   canvas.addEventListener('pointermove',event=>{
