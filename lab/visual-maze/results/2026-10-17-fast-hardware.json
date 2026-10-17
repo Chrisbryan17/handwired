@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "date": "2026-10-17T19:36:36.655Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "GPU resident maze full BFS and shortest path verification",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 176,
+  "count": 1457,
+  "checked": 4371,
+  "mismatches": 0,
+  "maxError": 0,
+  "nonfinite": 0,
+  "pathLength": 177,
+  "setupMs": 1022.5999999940395,
+  "wallMs": 122.3999999910593,
+  "msPerFrame": 0.6954545454037461,
+  "baselineWallMs": 1002.7999999970198,
+  "baselineMsPerFrame": 5.697727272710339,
+  "speedup": 8.192810458090435,
+  "baselineMaxError": 0,
+  "columns": 47,
+  "rows": 31,
+  "algorithm": "exact Handwired BFS with fully GPU-resident neighbor gathering"
+}

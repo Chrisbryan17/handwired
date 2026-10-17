@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "date": "2026-10-17T19:33:52.355Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "visual-fluid WebGPU eight-frame full-wire differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 120,
+  "count": 2560,
+  "checked": 12800,
+  "mismatches": 0,
+  "nonfinite": 0,
+  "outOfBounds": 0,
+  "brightness": 765.7850356733774,
+  "setupMs": 1621.5,
+  "wallMs": 173.29999999701977,
+  "msPerFrame": 1.4441666666418314,
+  "baselineWallMs": 1413.8999999910593,
+  "baselineMsPerFrame": 11.782499999925495,
+  "speedup": 8.158684362466094,
+  "maxParityError": 0,
+  "measurement": "GPU-resident fluid compute + direct render + ONE final readback"
+}
