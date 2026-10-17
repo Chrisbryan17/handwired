@@ -16,7 +16,7 @@ const binaries = process.platform === 'win32' ? [
   '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
 ] : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser']
 const preferredBrowser = process.env['HANDWIRED_GPU_BROWSER']
-if (preferredBrowser && !binaries.includes(preferredBrowser)) binaries.unshift(preferredBrowser)
+if (preferredBrowser !== undefined && preferredBrowser.length > 0 && !binaries.includes(preferredBrowser)) binaries.unshift(preferredBrowser)
 const port = 49381
 const requestedVendor = process.env['HANDWIRED_EXPECT_GPU_VENDOR']?.toLowerCase()
 let child: ReturnType<typeof Bun.spawn> | undefined
@@ -111,7 +111,7 @@ async function verify() {
     adapterInfo['device'], adapterInfo['description']].join(' ').toLowerCase()
   const suspectedSoftware = adapterInfo['isFallbackAdapter'] === true ||
     /swiftshader|llvmpipe|lavapipe|softpipe|software|subzero|mesa.*cpu/.test(adapterLabel)
-  const expectedVendorPresent = !requestedVendor || adapterLabel.includes(requestedVendor)
+  const expectedVendorPresent = requestedVendor === undefined || requestedVendor.length === 0 || adapterLabel.includes(requestedVendor)
   const nativeGpuProven = !suspectedSoftware && expectedVendorPresent &&
     !('error' in adapterInfo) && adapterInfo['vendor'] !== undefined
   console.log('Browser WebGPU adapter:', JSON.stringify(adapterInfo))
@@ -168,7 +168,7 @@ async function verify() {
       }
       console.log(JSON.stringify(reportValue, null, 2))
       socket.close()
-      if (info.status !== 'pass' || !expectedVendorPresent || (requestedVendor && !nativeGpuProven)) {
+      if (info.status !== 'pass' || !expectedVendorPresent || (requestedVendor !== undefined && requestedVendor.length > 0 && !nativeGpuProven)) {
         process.exitCode = 1
       }
       return
