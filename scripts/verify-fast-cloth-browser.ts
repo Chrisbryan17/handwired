@@ -8,7 +8,7 @@ import {tmpdir} from 'node:os'
 
 const report = process.argv[2] ?? 'lab/visual-cloth/results/smoke.json'
 const count = Math.max(1, Math.min(8192, Number(process.argv[3] ?? '128')))
-const server = Bun.serve({hostname: '127.0.0.1', port: 39102, routes: {'/': page}})
+const server = Bun.serve({hostname: '127.0.0.1', port: 0, routes: {'/': page}})
 const profile = mkdtempSync(join(tmpdir(), 'handwired-cloth-'))
 const devtoolsPort = 49402
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -77,7 +77,7 @@ async function run() {
     await command('Page.enable')
     await command('Runtime.enable')
     await command('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await command('Page.navigate',{url:'http://127.0.0.1:39102/?smoke=1&size='+count+'&frames=120'})
+    await command('Page.navigate',{url:String(server.url)+'?smoke=1&size='+count+'&frames=120'})
     let smoke: Record<string,unknown> | null = null
     for(let k=0;k<240;k++) {
       await delay(250)
