@@ -21,8 +21,8 @@ export function initialPopulation(count: number, seed = 3807): SwarmPopulation {
     const group = i % 3
     species[i] = group
     const theta = random() * Math.PI * 2, radius = Math.sqrt(random()) * 0.16
-    const cx = [0.28, 0.72, 0.5][group]!
-    const cy = [0.35, 0.35, 0.72][group]!
+    const cx = [0.28, 0.72, 0.5][group]
+    const cy = [0.35, 0.35, 0.72][group]
     const x = Math.max(0.025, Math.min(0.975, cx + Math.cos(theta) * radius))
     const y = Math.max(0.025, Math.min(0.975, cy + Math.sin(theta) * radius))
     state.set([x, y, Math.cos(theta + Math.PI / 2) * 0.27,
