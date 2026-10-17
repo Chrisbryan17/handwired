@@ -127,7 +127,7 @@ async function run(){
   runButton.disabled=true
   rows.replaceChildren()
   const steps=smoke?8:Number(stepSelect.value),trials=smoke?2:3
-  const adapter=await navigator.gpu?.requestAdapter({powerPreference:'high-performance'})
+  const adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'})
   if(!adapter)throw new Error('WebGPU adapter unavailable; cannot make hardware benchmark claims')
   const device=await adapter.requestDevice()
   document.querySelector<HTMLElement>('#device')!.textContent=
