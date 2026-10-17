@@ -16,10 +16,17 @@ describe('Neural Swarm deterministic physics and circuit', () => {
   })
   test('reject invalid population, source length, mismatched state', () => {
     expect(() => initialPopulation(0)).toThrow()
-    expect(() => initialPopulation(8193)).toThrow()
+    expect(() => initialPopulation(16385)).toThrow()
     expect(() => handwrittenStep(new Float32Array(4))).toThrow()
     expect(() => buildSwarmInputs(new Float32Array(7),new Uint8Array(3),
       {x:0.5,y:0.5,mode:'off'})).toThrow()
+  })
+  test('supports a deterministic 16,384-agent stress population', () => {
+    const a = initialPopulation(16384, 123), b = initialPopulation(16384, 123)
+    expect(a.state.length).toBe(65536)
+    expect(a.species.length).toBe(16384)
+    expect(a.state).toEqual(b.state)
+    expect(a.species).toEqual(b.species)
   })
   test('independent handwritten FP32 step agrees with Handwired reference', () => {
     let seed = 7361
