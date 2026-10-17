@@ -31,12 +31,12 @@ function canvasScale(canvas:HTMLCanvasElement,context:CanvasRenderingContext2D){
 function draw(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,state:SearchState) {
   const bounds=canvasScale(canvas,ctx),cellW=bounds.width/maze.columns,cellH=bounds.height/maze.rows
   const gap=Math.max(.35,Math.min(1,cellW*.11))
-  const path=state.visited[maze.goal]?new Set(reconstructPath(maze,state)):new Set<number>()
+  const path=state.visited[maze.goal]===1?new Set(reconstructPath(maze,state)):new Set<number>()
   ctx.fillStyle='#080c1d';ctx.fillRect(0,0,bounds.width,bounds.height)
   for(let i=0;i<maze.walls.length;i++){
-    if(maze.walls[i])continue
+    if(maze.walls[i]===1)continue
     const x=(i%maze.columns)*cellW,y=Math.floor(i/maze.columns)*cellH
-    let color=state.frontier[i]?hues.frontier:state.visited[i]?hues.seen:hues.unseen
+    let color=state.frontier[i]===1?hues.frontier:state.visited[i]===1?hues.seen:hues.unseen
     if(path.has(i))color=hues.path
     if(i===maze.goal)color=hues.goal
     if(i===maze.start)color=hues.start
@@ -90,7 +90,7 @@ async function tick() {
   put('depth',String(gpu.depth))
   put('explored',gpu.visited.reduce((sum,value)=>sum+value,0).toLocaleString())
   put('wires',checked.toLocaleString());put('errors',String(differences))
-  put('path',gpu.visited[maze.goal]?String(reconstructPath(maze,gpu).length):'SEARCHING')
+  put('path',gpu.visited[maze.goal]===1?String(reconstructPath(maze,gpu).length):'SEARCHING')
   put('cpu-info',cpuMs.toFixed(2)+' ms · '+cpu.depth+' expansions')
   put('gpu-info',gpuMs.toFixed(2)+' ms · '+gpu.depth+' expansions · '+evaluator!.mode.toUpperCase())
   if(cpu.finished&&gpu.finished)status.textContent='Search complete. Yellow marks the reconstructed shortest path.'
