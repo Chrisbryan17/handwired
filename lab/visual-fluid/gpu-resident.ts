@@ -131,12 +131,12 @@ export class ResidentFluidGpu {
     this.pressure=[buffers[3]!,buffers[4]!];this.divergence=buffers[5]!
     this.params=buffers[0]!;this.pipelines=pipelines;this.groups=groups
     this.adapterInfo=adapterInfo
-    void device.lost.then(reason=>{this.lost=reason.message||reason.reason})
+    void device.lost.then(reason=>{this.lost=reason.message !== '' ? reason.message : reason.reason})
   }
   static async create(width:number,height:number,provided?:GPUDevice) {
     if(!Number.isInteger(width)||!Number.isInteger(height)||width<8||height<8||
       width*height>65536)throw new Error('invalid resident fluid dimensions')
-    const adapter=provided?null:await navigator.gpu?.requestAdapter()
+    const adapter=provided || typeof navigator === 'undefined' ? null : await navigator.gpu.requestAdapter()
     const device=provided??await adapter?.requestDevice()
     if(!device)throw new Error('real WebGPU device required for resident fluid solver')
     const bytes=width*height*FLUID_CHANNELS*4,scalar=width*height*4
@@ -179,13 +179,13 @@ export class ResidentFluidGpu {
       groups['advect']=[group('advect',buffers[1]!,buffers[2]!),group('advect',buffers[2]!,buffers[1]!)]
       groups['diffuse']=[group('diffuse',buffers[2]!,buffers[1]!),group('diffuse',buffers[1]!,buffers[2]!)]
       groups['divergence']=[group('divergence',buffers[1]!,buffers[5]!),group('divergence',buffers[2]!,buffers[5]!)]
-      groups['jacobi']=[group('jacobi',buffers[3]!,buffers[4]!,buffers[5]!),
-        group('jacobi',buffers[4]!,buffers[3]!,buffers[5]!)]
+      groups['jacobi']=[group('jacobi',buffers[3]!,buffers[4]!,buffers[5]),
+        group('jacobi',buffers[4]!,buffers[3]!,buffers[5])]
       groups['project']=[]
       for(let parity=0;parity<2;parity++){
         for(let pressureIndex=0;pressureIndex<2;pressureIndex++){
-          groups['project']!.push(group('project',buffers[1+parity]!,
-            buffers[2-parity]!,buffers[3+pressureIndex]!))
+          groups['project'].push(group('project',buffers[1+parity]!,
+            buffers[2-parity],buffers[3+pressureIndex]!))
         }
       }
       const label=adapter?JSON.stringify(adapter.info):'user-supplied GPUDevice'
@@ -193,7 +193,7 @@ export class ResidentFluidGpu {
     }catch(error){for(const b of buffers)b.destroy();throw error}
   }
   private ensure(){if(this.disposed)throw new Error('fluid GPU destroyed')
-    if(this.lost)throw new Error('fluid GPU device lost: '+this.lost)}
+    if(this.lost !== null)throw new Error('fluid GPU device lost: '+this.lost)}
   load(fluid:Fluid|Float32Array) {
     this.ensure()
     const fields=fluid instanceof Float32Array?fluid:fluid.fields
