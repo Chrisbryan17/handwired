@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
    if(dist<0.00000001){continue;}
    let magnitude=clamp((dist-rest(d[k]))/dist,-0.65,0.65);
    let held=select(1.0,2.0,isHeld(j));
-   corrections=corrections+delta*magnitude*0.12*held;
+   corrections=corrections+delta*magnitude*0.18*held;
    total=total+1.0;
   }
   pos=pos+corrections;
@@ -293,7 +293,7 @@ export class ResidentClothGpu {
       this.tearParity=1-this.tearParity
     }
     // The state ping-pong returns to its starting buffer after one integration
-    // and three constraint passes. Keep the initial state buffer persistent.
+    // and five constraint passes. Keep the initial state buffer persistent.
     const a=this.stateParity
     // Groups were compiled with the first tear mask. When tearing, masks cannot be
     // read through that bind group; the integration/constraint passes are rebuilt
@@ -309,7 +309,7 @@ export class ResidentClothGpu {
     }
     dispatch(this.integrate,create(this.integrate,this.state[a],this.state[1-a]))
     let parity=1-a
-    for(let iteration=0;iteration<3;iteration++){
+    for(let iteration=0;iteration<5;iteration++){
       dispatch(this.constrain,create(this.constrain,this.state[parity],this.state[1-parity]))
       parity=1-parity
     }
