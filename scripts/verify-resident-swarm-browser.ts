@@ -77,7 +77,7 @@ async function run() {
     await command('Page.enable')
     await command('Runtime.enable')
     await command('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await command('Page.navigate',{url:'http://127.0.0.1:39100/?smoke=1&count='+count})
+    await command('Page.navigate',{url:'http://127.0.0.1:39100/?smoke=1&count='+count+'&frames='+((process.argv.find(x=>x.startsWith('--frames='))??'--frames=8').split('=')[1])})
     let smoke: Record<string,unknown> | null = null
     for(let k=0;k<240;k++) {
       await delay(250)
@@ -102,7 +102,7 @@ async function run() {
       /swiftshader|llvmpipe|lavapipe|softpipe|software|subzero/.test(label)
     const nativeGpu = typeof adapter['vendor']==='string' && !software
     const success=smoke['ok']===true && smoke['mode']==='gpu' && nativeGpu &&
-      smoke['nonfinite']===0 && smoke['outOfBounds']===0 && smoke['frames']===8
+      smoke['nonfinite']===0 && smoke['outOfBounds']===0 && typeof smoke['frames']==='number' && smoke['frames']>=8
     const summary={ok:success, date:new Date().toISOString(), browser:executable,
       test:'swarm fully GPU-resident simulation and instanced WebGPU rendering',
       adapter, software, nativeGpu, ...smoke}
