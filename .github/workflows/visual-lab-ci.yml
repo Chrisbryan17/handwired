@@ -1,0 +1,46 @@
+name: Visual Lab Verification
+
+on:
+  push:
+    branches:
+      - main
+      - feat/visual-lab-release-20261017
+    paths:
+      - 'lab/visual-*/**'
+      - 'src/runtime/**'
+      - 'scripts/**'
+      - 'assets/**'
+      - '.github/workflows/visual-lab-ci.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Focused circuit and physics correctness
+        run: bun test --timeout 30000 ./tests/runtime/webgpu.test.ts ./tests/runtime/webgpu-completion.test.ts ./lab/visual-swarm/model.test.ts ./lab/visual-maze/model.test.ts ./lab/visual-cloth/model.test.ts ./lab/visual-fluid/model.test.ts
+      - name: Repository regression suite
+        run: bun test
+      - name: TypeScript validation
+        run: bunx tsc -p .
+      - name: Type-aware lint
+        run: bunx oxlint --type-aware src/runtime/webgpu-inline.ts lab/visual-swarm lab/visual-maze lab/visual-cloth lab/visual-fluid lab/visual-benchmarks scripts/verify-visual-benchmarks-browser.ts scripts/verify-resident-fluid-browser.ts scripts/verify-resident-cloth-browser.ts
+      - name: Prefix-safe production build and static link validation
+        run: bun run site:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: handwired-visual-lab-site
+          path: site
+          retention-days: 14
