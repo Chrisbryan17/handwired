@@ -1,4 +1,5 @@
 import {createWebGpuEvaluator,type WebGpuCircuitEvaluator} from '../../src/runtime/webgpu.ts'
+import {ResidentMazeGpu} from './gpu-resident.ts'
 import {buildMazeCircuit, MAZE_SOURCE_SIZE} from './model.ts'
 import {beginSearch,circuitWave,generateMaze,mazeInputs,
   reconstructPath,referenceWave,type Maze,type SearchState} from './engine.ts'
@@ -7,14 +8,20 @@ const params=new URLSearchParams(location.search),smoke=params.get('smoke')==='1
 const {circuit,outputWires}=buildMazeCircuit()
 const width=circuit.sourceSize+circuit.operations.length
 const size=document.querySelector<HTMLSelectElement>('#size')!
+const engine=document.querySelector<HTMLSelectElement>('#engine')!
+const wantsFast=params.get('fast')==='1'
+engine.value=smoke&&!wantsFast?'legacy':'fast'
 const strategy=document.querySelector<HTMLSelectElement>('#strategy')!
 const cpuCanvas=document.querySelector<HTMLCanvasElement>('#cpu')!
 const gpuCanvas=document.querySelector<HTMLCanvasElement>('#gpu')!
+const fastCanvas=document.querySelector<HTMLCanvasElement>('#gpu-fast')!
 const cpuContext=cpuCanvas.getContext('2d')!,gpuContext=gpuCanvas.getContext('2d')!
 const status=document.querySelector<HTMLElement>('#status')!
 const put=(id:string,value:string)=>{document.getElementById(id)!.textContent=value}
 let seed=1849,maze:Maze=generateMaze(),cpu:SearchState=beginSearch(maze),gpu:SearchState=beginSearch(maze)
 let evaluator:WebGpuCircuitEvaluator|null=null
+let resident:ResidentMazeGpu|null=null
+let fastValidated=false
 let frame=0,paused=false,restartRequested=true,stepRequested=false
 let differences=0,maxError=0,checked=0
 let cpuMs=0,gpuMs=0
@@ -45,12 +52,32 @@ function draw(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,state:Search
   }
 }
 async function restart(){
-  evaluator?.destroy();evaluator=null
+  evaluator?.destroy();evaluator=null;resident?.destroy();resident=null;fastValidated=false
   const cols=Number(size.value),rows=cols===31?21:cols===61?39:31
   maze=generateMaze(cols,rows,seed++)
   cpu=beginSearch(maze);gpu=beginSearch(maze)
   frame=0;differences=0;maxError=0;checked=0
   status.textContent='Compiling neural wavefront expansion…'
+  document.body.classList.toggle('gpu-fast',engine.value==='fast')
+  strategy.disabled=engine.value==='fast'
+  if(engine.value==='fast'){
+    const rect=fastCanvas.getBoundingClientRect(),scale=Math.min(2,window.devicePixelRatio||1)
+    fastCanvas.width=Math.max(1,Math.round(rect.width*scale))
+    fastCanvas.height=Math.max(1,Math.round(rect.height*scale))
+    try{
+      resident=await ResidentMazeGpu.create(fastCanvas,maze)
+      status.textContent='Full GPU-resident wavefront: no per-step neighbor transfers or state readback.'
+      put('gpu-info','GPU compute + GPU rendering · no per-step readback')
+      put('wires','0 / step');put('errors','Waiting for full-state GPU/CPU verification')
+      restartRequested=false
+      draw(cpuCanvas,cpuContext,cpu)
+      return
+    }catch(error){
+      if(smoke&&wantsFast)throw error
+      engine.value='legacy';document.body.classList.remove('gpu-fast')
+      status.textContent='GPU resident unavailable; falling back to legacy: '+String(error)
+    }
+  }
   evaluator=await createWebGpuEvaluator(circuit,{
     mode:smoke?'gpu':'auto',capacity:maze.walls.length,
     strategy:strategy.value as 'specialized'|'layers'|'monolithic'})
@@ -72,8 +99,56 @@ function compare(input:Float32Array,values:Float32Array){
   }
 }
 async function tick() {
-  if(restartRequested||evaluator===null)await restart()
+  if(restartRequested||(evaluator===null&&resident===null))await restart()
   if(paused&&!stepRequested)return
+  if(resident!==null){
+    if(paused&&!stepRequested)return
+    if(cpu.finished&&fastValidated&&!smoke)return
+    const cpuStart=performance.now()
+    if(!cpu.finished)cpu=referenceWave(maze,cpu)
+    cpuMs=performance.now()-cpuStart
+    const gpuStart=performance.now()
+    const rect=fastCanvas.getBoundingClientRect(),ratio=Math.min(2,window.devicePixelRatio||1)
+    const w=Math.max(1,Math.round(rect.width*ratio)),h=Math.max(1,Math.round(rect.height*ratio))
+    if(fastCanvas.width!==w||fastCanvas.height!==h){fastCanvas.width=w;fastCanvas.height=h}
+    resident.frame();gpuMs=performance.now()-gpuStart
+    frame++;stepRequested=false
+    draw(cpuCanvas,cpuContext,cpu)
+    put('depth',String(frame))
+    put('explored',cpu.visited.reduce((sum,x)=>sum+x,0).toLocaleString()+' (CPU)')
+    put('cpu-info',cpuMs.toFixed(2)+'ms · exact CPU oracle')
+    put('gpu-info',gpuMs.toFixed(2)+'ms CPU submission · no readback')
+    const finish=smoke?frame>=8:cpu.finished
+    if(finish&&!fastValidated){
+      const result=await resident.read()
+      let mismatches=0,maxError=0
+      for(let i=0;i<maze.walls.length;i++){
+        const at=i*4
+        for(const [value,reference] of [[result[at]!,cpu.visited[i]!],[result[at+1]!,cpu.frontier[i]!],[result[at+2]!,cpu.distance[i]!]]){
+          const delta=Math.abs(value-reference)
+          if(!Number.isFinite(delta)||delta>0.00001)mismatches++
+          maxError=Math.max(maxError,delta)
+        }
+      }
+      checked=maze.walls.length*3;differences=mismatches
+      fastValidated=true
+      put('wires',checked.toLocaleString()+' state values, final readback')
+      put('errors',String(mismatches))
+      const path=cpu.visited[maze.goal]===1?reconstructPath(maze,cpu):[]
+      put('path',path.length?String(path.length):'NOT FOUND')
+      if(path.length&&mismatches===0){resident.setPath(path);resident.draw()}
+      status.textContent=mismatches===0?'GPU-resident BFS verified against independent CPU BFS.':'GPU-vs-CPU BFS mismatch: '+mismatches
+      document.body.dataset.status=mismatches===0?'pass':'fail'
+      if(smoke){
+        const ok=mismatches===0
+        document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify({
+          ok,mode:'gpu',fast:true,frames:frame,count:maze.walls.length,checked,
+          mismatches,maxError,cpuMs,gpuMs})
+        paused=true
+      }
+    }
+    return
+  }
   if(cpu.finished&&gpu.finished&&!smoke)return
   const startedCpu=performance.now()
   cpu=referenceWave(maze,cpu)
@@ -120,4 +195,5 @@ document.querySelector<HTMLButtonElement>('#restart')!.onclick=()=>{
   restartRequested=true;paused=false;put('pause','PAUSE')}
 size.onchange=()=>{restartRequested=true}
 strategy.onchange=()=>{restartRequested=true}
+engine.onchange=()=>{restartRequested=true}
 void loop()
