@@ -30,10 +30,29 @@ async function run(){
    }
    const path=cpu.visited[maze.goal]===1?reconstructPath(maze,cpu):[]
    if(path.length>0&&mismatches===0){backend.setPath(path);backend.draw()}
-   const ok=cpu.finished&&cpu.visited[maze.goal]===1&&frames===backend.steps&&mismatches===0
+   // Controlled comparison: identical GPU BFS shaders and GPU draw, but force a
+   // full state readback and synchronization after EVERY expansion.
+   const baselineCanvas=document.createElement('canvas')
+   baselineCanvas.width=canvas.width;baselineCanvas.height=canvas.height
+   const baseline=await ResidentMazeGpu.create(baselineCanvas,maze)
+   let baselineWallMs=0,baselineMaxError=0
+   try{
+     const startBaseline=performance.now()
+     for(let k=0;k<frames;k++){
+       baseline.frame()
+       await baseline.read()
+     }
+     const baselineState=await baseline.read()
+     baselineWallMs=performance.now()-startBaseline
+     for(let k=0;k<states.length;k++)
+       baselineMaxError=Math.max(baselineMaxError,Math.abs(states[k]!-baselineState[k]!))
+   }finally{baseline.destroy()}
+   const speedup=baselineWallMs/elapsed
+   const ok=cpu.finished&&cpu.visited[maze.goal]===1&&frames===backend.steps&&mismatches===0&&baselineMaxError<1e-5
    const report={ok,mode:'gpu',frames,count:maze.walls.length,
      checked:maze.walls.length*3,mismatches,maxError,nonfinite,pathLength:path.length,
-     setupMs,wallMs:elapsed,msPerFrame:elapsed/Math.max(1,frames),columns,rows,
+     setupMs,wallMs:elapsed,msPerFrame:elapsed/Math.max(1,frames),
+     baselineWallMs,baselineMsPerFrame:baselineWallMs/frames,speedup,baselineMaxError,columns,rows,
      algorithm:'exact Handwired BFS with fully GPU-resident neighbor gathering'}
    document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify(report)
    document.querySelector<HTMLElement>('#status')!.textContent=ok?'Full GPU BFS and shortest path validated':'BFS mismatch'
