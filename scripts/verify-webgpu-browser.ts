@@ -21,8 +21,10 @@ const port = 49381
 const requestedVendor = process.env['HANDWIRED_EXPECT_GPU_VENDOR']?.toLowerCase()
 let child: ReturnType<typeof Bun.spawn> | undefined
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-const browserMode = process.argv[3] === 'benchmark' ? 'benchmark' : 'smoke'
+const browserMode = process.argv[3] === 'benchmark' ? 'benchmark' :
+  process.argv[3] === 'probe' ? 'probe' : 'smoke'
 const browserUrl = 'http://127.0.0.1:39081/' + (browserMode === 'smoke' ? '?smoke=1' :
+  browserMode === 'probe' ? '?probe=1' :
   process.argv[4] === undefined ? '' : '?steps=' + encodeURIComponent(process.argv[4]))
 
 async function startBrowser(binary: string) {
@@ -111,7 +113,27 @@ async function verify() {
   const expectedVendorPresent = !requestedVendor || adapterLabel.includes(requestedVendor)
   const nativeGpuProven = !suspectedSoftware && expectedVendorPresent &&
     !('error' in adapterInfo) && adapterInfo['vendor'] !== undefined
-  for (let attempt = 0; attempt < 90; attempt++) {
+  console.log('Browser WebGPU adapter:', JSON.stringify(adapterInfo))
+  if (browserMode === 'probe') {
+    let computeProof: Record<string, unknown> = {}
+    try {
+      const reply = await command('Runtime.evaluate', {
+        expression: '(async()=>{const a=await navigator.gpu.requestAdapter();const d=await a.requestDevice();const u=GPUBufferUsage;const b=d.createBuffer({size:4,usage:u.STORAGE|u.COPY_SRC});const r=d.createBuffer({size:4,usage:u.COPY_DST|u.MAP_READ});const m=d.createShaderModule({code:"@group(0) @binding(0) var<storage,read_write> out:array<f32>; @compute @workgroup_size(1) fn main(){out[0]=42.0;}"});const p=await d.createComputePipelineAsync({layout:"auto",compute:{module:m,entryPoint:"main"}});const group=d.createBindGroup({layout:p.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:b}}]});const e=d.createCommandEncoder();const pass=e.beginComputePass();pass.setPipeline(p);pass.setBindGroup(0,group);pass.dispatchWorkgroups(1);pass.end();e.copyBufferToBuffer(b,0,r,0,4);d.queue.submit([e.finish()]);await r.mapAsync(GPUMapMode.READ);const v=new Float32Array(r.getMappedRange())[0];r.unmap();d.destroy();return {computed:v,valid:v===42};})()',
+        awaitPromise: true, returnByValue: true,
+      })
+      computeProof = (reply?.['result'] as {value?: Record<string, unknown>} | undefined)?.value
+        ?? {error:'compute shader result missing'}
+    } catch (error) {computeProof={error:String(error)}}
+    const reportValue={browser,test:'native hardware WebGPU compute probe',adapterInfo,
+      nativeGpuProven,suspectedSoftware,expectedVendor:requestedVendor??null,computeProof,
+      ok:nativeGpuProven && computeProof['valid']===true}
+    writeFileSync(report,JSON.stringify(reportValue,null,2)+'\n')
+    console.log(JSON.stringify(reportValue,null,2))
+    if(!reportValue.ok)process.exitCode=1
+    socket.close()
+    return
+  }
+  for (let attempt = 0; attempt < 360; attempt++) {
     await delay(350)
     const response = await command('Runtime.evaluate', {
       expression: 'JSON.stringify({status:document.body?.dataset.status, smoke:document.querySelector("#smoke")?.textContent})',
