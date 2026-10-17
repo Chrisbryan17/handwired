@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "date": "2026-10-17T18:32:39.282Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "benchmark independent JS vs Handwired WGSL vs handwritten WGSL",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 8,
+  "count": 2,
+  "checked": 2,
+  "mismatches": 0,
+  "maxError": 0,
+  "browserAdapter": {},
+  "steps": 8,
+  "trials": 2,
+  "results": [
+    {
+      "workload": "Fluid",
+      "elements": 384,
+      "steps": 8,
+      "cpuMs": 5.625,
+      "handwiredGpuMs": 8.462500000372529,
+      "handwrittenGpuMs": 7.775000000372529,
+      "gpuCompileMs": 349,
+      "handwrittenCompileMs": 106.6000000089407,
+      "parityMaxError": 0,
+      "parityRms": 0,
+      "readbackIncluded": true,
+      "ok": true
+    },
+    {
+      "workload": "Cloth",
+      "elements": 165,
+      "steps": 8,
+      "cpuMs": 2.387500001117587,
+      "handwiredGpuMs": 5.337500000372529,
+      "handwrittenGpuMs": 4.974999999627471,
+      "gpuCompileMs": 262.1000000089407,
+      "handwrittenCompileMs": 104.09999999403954,
+      "parityMaxError": 0,
+      "parityRms": 0,
+      "readbackIncluded": true,
+      "ok": true
+    }
+  ]
+}

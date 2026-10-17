@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","include":["./*.ts","../../scripts/serve-visual-maze.ts","../../scripts/verify-visual-maze-browser.ts"]}

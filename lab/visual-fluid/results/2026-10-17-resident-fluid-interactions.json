@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "date": "2026-10-17T18:19:21.221Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "resident-fluid WebGPU fused full-physics differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 8,
+  "count": 384,
+  "checked": 1920,
+  "mismatches": 0,
+  "maxError": 0.00000489008380100131,
+  "rms": 2.308766586800475e-7,
+  "nonfinite": 0,
+  "gpuMs": 103,
+  "adapterInfo": "{}",
+  "numericTolerance": 0.0001,
+  "dyeBefore": 98.61651037071896,
+  "dyeAfter": 259.08433238323306,
+  "longRunFinite": true,
+  "additionalSteps": 25
+}
