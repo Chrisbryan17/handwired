@@ -20,8 +20,8 @@ describe('Neural Maze parallel BFS',()=>{
       const visited=bits[0]!,pass=bits[5]!
       const active=(bits[1]!||bits[2]!||bits[3]!||bits[4]!)?1:0
       const frontier=(1-visited)*pass*active
-      expect(values[outputWires[1]!]!).toBe(frontier)
-      expect(values[outputWires[0]!]!).toBe(visited+frontier)
+      expect(values[outputWires[1]]!).toBe(frontier)
+      expect(values[outputWires[0]]!).toBe(visited+frontier)
     }
   })
   test('entire seeded maze search agrees with independent conventional BFS every level',()=>{
