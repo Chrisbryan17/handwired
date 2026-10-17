@@ -311,6 +311,7 @@ async function smokeTest() {
   const galleryExpected = gallery.circuit.evaluateReference(gallerySource)
   let galleryMismatches = 0, galleryBitMismatches = 0, galleryMaxError = 0
   const galleryMismatchExamples: {strategy:string,wire:number,kind:string,expected:string,actual:string}[]=[]
+  let galleryCachedBitMismatches=0, galleryCachedMismatches=0
   let galleryLayerCount = 0
   for (const strategy of ['monolithic', 'layers', 'specialized'] as const) {
     const galleryEvaluator = await createWebGpuEvaluator(gallery.circuit, {
@@ -345,7 +346,22 @@ async function smokeTest() {
   try{
     const cachedResult=await cachedGallery.evaluate(gallerySource)
     for(let i=0;i<galleryExpected.length;i++){
-      if(!Object.is(cachedResult[i],galleryExpected[i]))galleryMismatches++
+      const actual=cachedResult[i]!,expected=galleryExpected[i]!
+      if(!Object.is(actual,expected)){
+        galleryCachedBitMismatches++
+        const difference=Math.abs(actual-expected)
+        if(galleryMismatchExamples.length<16)galleryMismatchExamples.push({
+          strategy:'specialized-cached',wire:i,
+          kind:i<gallery.circuit.sourceSize?'source':
+            gallery.circuit.operations[i-gallery.circuit.sourceSize]?.kind??'unknown',
+          expected:Object.is(expected,-0)?'-0':String(expected),
+          actual:Object.is(actual,-0)?'-0':String(actual),
+        })
+        if(!(Number.isFinite(difference)&&difference<=0.0001)){
+          galleryMismatches++
+          galleryCachedMismatches++
+        }
+      }
     }
   }finally{cachedGallery.destroy()}
   const {createGridStencil}=await import('../src/runtime/webgpu-grid.ts')
@@ -412,7 +428,8 @@ async function smokeTest() {
     specializedMismatches,specializedStateMismatches,gridMismatches,gridMaxError,
     fp32Edges,fallbackAdapterName,fallbackAdapterMismatches,galleryCacheHit,cachedGalleryInitMs,
     deviceLossCaught, galleryOperations: gallery.circuit.operations.length,
-    galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError, galleryMismatchExamples,
+    galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError,
+    galleryCachedBitMismatches,galleryCachedMismatches,galleryMismatchExamples,
     integratedOperations: integrated.circuit.operations.length,
     integratedLayerCount, integratedMismatches, integratedBitMismatches, integratedMaxError,
     mismatches, maxError, stateMismatches, stateMaxError, layerMismatches, layerStateMismatches,
