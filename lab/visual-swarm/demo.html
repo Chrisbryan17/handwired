@@ -21,7 +21,7 @@
     </section>
     <section class="toolbar">
       <div class="field"><label for="count">AGENTS</label>
-        <select id="count"><option value="128">128</option><option value="256">256</option><option value="512" selected>512</option><option value="1024">1,024</option></select></div>
+        <select id="count"><option value="128">128</option><option value="256">256</option><option value="512" selected>512</option><option value="1024">1,024</option><option value="2048">2,048</option><option value="4096">4,096</option><option value="8192">8,192</option><option value="16384">16,384 · stress</option></select></div>
       <div class="field"><label for="strategy">GPU COMPILER</label>
         <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Interpreted</option><option value="layers">Dependency layers</option></select></div>
       <div class="field"><label for="pointer">POINTER</label>
@@ -45,12 +45,12 @@
       <div><span>LIVE FRAME RATE</span><strong id="fps">—</strong><small>frames/s</small></div>
       <div><span>CIRCUIT OPERATIONS</span><strong id="operations">—</strong><small>per agent</small></div>
       <div><span>MAX ABS ERROR</span><strong id="error">—</strong><small>vs same-input CPU oracle</small></div>
-      <div><span>CHECKED WIRES</span><strong id="wires">—</strong><small>per frame</small></div>
+      <div><span>CHECKED WIRES</span><strong id="wires">—</strong><small>cumulative validated wires</small></div>
       <div><span>GPU DIFFERENCES</span><strong id="mismatches">—</strong><small>threshold 2e−5</small></div>
     </section>
     <p id="status" class="status">Initializing neural swarm…</p>
     <footer>
-      <p><b>What is actually running?</b> A uniform-grid neighborhood search computes cohesion, separation and alignment signals on the CPU. Both execution paths then run the same Handwired FP32 circuit for agent steering and motion. The GPU renderer only draws results; it does not replace the physics computation. Host-side velocity limiting and boundary projection are identical for both paths.</p>
+      <p><b>What is actually running?</b> A uniform-grid neighborhood search computes cohesion, separation and alignment signals on the CPU. Both execution paths then run the same Handwired FP32 circuit for agent steering and motion. The Canvas2D renderer only draws results; it does not replace the physics computation. Host-side velocity limiting and boundary projection are identical for both paths.</p>
       <p>Inspired by Craig Reynolds' boids and the open-source <a href="https://github.com/hughsk/boids">hughsk/boids</a> ecosystem. Independent implementation, no training or copied source. Verified GPU support is device-dependent.</p>
     </footer>
   </main>
