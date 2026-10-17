@@ -18,7 +18,6 @@ export const GRID_RADIUS = 3
 const CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION * 3
 const USAGE = {MAP_READ:1,COPY_SRC:4,COPY_DST:8,UNIFORM:64,STORAGE:128,VERTEX:32} as const
 const MAP_READ = 1
-type Params = {count: number,mode: number,px:number,py:number,w:number,h:number}
 const defs = `
 struct Params {
   count:u32, mode:u32, pointerX:f32, pointerY:f32,
@@ -218,10 +217,10 @@ export class ResidentSwarmGpu {
   static async create(canvas:HTMLCanvasElement,count:number) {
     if(!Number.isSafeInteger(count)||count<1||count>MAX_SWARM_AGENTS)
       throw new Error('invalid swarm GPU population')
-    const adapter=await navigator.gpu?.requestAdapter({powerPreference:'high-performance'})
+    const adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'})
     if(!adapter)throw new Error('WebGPU adapter unavailable')
     const device=await adapter.requestDevice()
-    const context=canvas.getContext('webgpu')
+    const context=canvas.getContext('webgpu') as GPUCanvasContext | null
     if(!context){device.destroy();throw new Error('WebGPU canvas unavailable')}
     const format=navigator.gpu.getPreferredCanvasFormat()
     context.configure({device,format,alphaMode:'opaque'})
