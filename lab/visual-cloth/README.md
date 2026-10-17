@@ -40,3 +40,7 @@ The browser smoke verifier checks real WebGPU adapter identification, eight fram
 ![Actual headless Chrome Intel UHD WebGPU demonstration, October 17, 2026](results/2026-10-17-dell-webgpu-qa.png)
 
 [View the machine-readable Intel UHD Graphics WebGPU correctness report](results/2026-10-17-dell-webgpu-qa.json). This captured screenshot is of the real application running eight verification frames, not a generated illustration. The evidence establishes full-wire numerical agreement on the tested hardware only; it is not proof of a performance speedup or of hardware behavior on every adapter.
+
+## GPU-resident performance mode (October 2026)
+
+The default live browser mode now renders directly from the resident GPU state, without per-frame GPU-to-CPU buffer mapping or synchronization. The previous hardware-verification and hybrid modes remain selectable. The optimization and reproducible hardware results are documented in [Visual Lab Performance](../../docs/visual-lab-performance.md). This mode is **not** a kernel-only timing benchmark; UI timings show CPU-side dispatch, while synchronized wall-clock timings are in the reports.
