@@ -58,7 +58,7 @@ const {circuit,outputWires}=buildSwarmCircuit()
 const inline=emitInlineCircuitWgsl(circuit,outputWires,'handwiredBoid')
 const integrate=defs+inline+`
 @group(0) @binding(0) var<storage,read> agents:array<vec4<f32>>;
-@group(0) @binding(1) var<storage,read> grid:array<Cell>;
+@group(0) @binding(1) var<storage,read_write> grid:array<Cell>;
 @group(0) @binding(2) var<storage,read_write> nextAgents:array<vec4<f32>>;
 @group(0) @binding(3) var<uniform> p:Params;
 @compute @workgroup_size(128)
