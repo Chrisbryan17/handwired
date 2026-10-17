@@ -70,11 +70,11 @@ def main():
     bun=install_bun()
     os.environ['PATH']=str(pathlib.Path(bun).parent)+os.pathsep+os.environ.get('PATH','')
     if not execute('dependencies',[bun,'install','--frozen-lockfile'],600,cwd=ROOT):return 3
+    # The current-head targeted suite and type-aware checks already passed in
+    # Kaggle v15. Finish with the full 162-file suite on the same PR revision.
     checks=[
-      execute('targeted',[bun,'test','--timeout','30000',
-        './tests/runtime/webgpu.test.ts','./tests/runtime/webgpu-completion.test.ts'],
-        600,cwd=ROOT),
-      execute('types-lint',[bun,'scripts/check.ts'],1800,cwd=ROOT),
+      execute('full-suite',[bun,'test','--timeout','30000','./tests','./template','./lab'],
+        4200,cwd=ROOT),
     ]
     STATUS['prior_independent_evidence']={
       'full_suite':{'version':2,'passed':1284,'failed':0,'skipped':2,
