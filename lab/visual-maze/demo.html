@@ -10,7 +10,7 @@
 <div class="toolbar">
 <label>MAZE <select id="size"><option value="31">31 × 21</option><option value="47" selected>47 × 31</option><option value="61">61 × 39</option></select></label>
 <label>EXECUTION <select id="engine"><option value="fast" selected>Fast GPU-resident BFS</option><option value="legacy">Legacy full-wire comparison</option></select></label>
-<label>GPU EXECUTION <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Dependency layers</option></select></label>
+<label>LEGACY GPU COMPILER <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Dependency layers</option></select></label>
 <button id="pause">PAUSE</button><button id="step">STEP →</button><button id="restart" class="action">NEW MAZE ↗</button></div>
 <section class="panes">
 <div class="panel"><header><span>01 / CONVENTIONAL SEARCH</span><b>CPU BFS</b></header><canvas id="cpu"></canvas><footer id="cpu-info">Waiting for search</footer></div>
@@ -19,7 +19,7 @@
 <section class="metrics">
 <div><label>EXPANSION DEPTH</label><strong id="depth">0</strong></div>
 <div><label>CELLS EXPLORED</label><strong id="explored">1</strong></div>
-<div><label>ORACLE WIRES CHECKED</label><strong id="wires">0</strong></div>
+<div><label>STATE VALUES CHECKED</label><strong id="wires">0</strong></div>
 <div><label>GPU MISMATCHES</label><strong id="errors">0</strong></div>
 <div><label>PATH LENGTH</label><strong id="path">—</strong></div>
 </section>
