@@ -7,7 +7,7 @@ import {dirname, join} from 'node:path'
 import {tmpdir} from 'node:os'
 
 const report = process.argv[2] ?? 'lab/visual-swarm/results/smoke.json'
-const count = Math.max(1, Math.min(8192, Number(process.argv[3] ?? '128')))
+const count = Math.max(1, Math.min(16384, Number(process.argv[3] ?? '128')))
 const server = Bun.serve({hostname: '127.0.0.1', port: 39100, routes: {'/': page}})
 const profile = mkdtempSync(join(tmpdir(), 'handwired-swarm-'))
 const devtoolsPort = 49400
