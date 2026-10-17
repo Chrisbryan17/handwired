@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "date": "2026-10-17T15:40:02.554Z",
+  "date": "2026-10-17T16:03:26.735Z",
   "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "test": "visual-swarm WebGPU eight-frame full-wire differential",
   "adapter": {
@@ -20,6 +20,6 @@
   "totalChecked": 20480,
   "mismatches": 0,
   "maxError": 5.960464477539063e-8,
-  "cpuMs": 1.6000000089406967,
-  "gpuMs": 19.600000008940697
+  "cpuMs": 1.2000000029802322,
+  "gpuMs": 16.200000002980232
 }
