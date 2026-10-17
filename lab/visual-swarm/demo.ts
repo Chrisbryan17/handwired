@@ -1,6 +1,6 @@
 import {createWebGpuEvaluator, type WebGpuCircuitEvaluator} from '../../src/runtime/webgpu.ts'
 import {buildSwarmCircuit, SOURCE_SIZE} from './model.ts'
-import {buildSwarmInputs, initialPopulation, projectState, referenceFrame, type PointerState} from './simulation.ts'
+import {MAX_SWARM_AGENTS, buildSwarmInputs, initialPopulation, projectState, referenceFrame, type PointerState} from './simulation.ts'
 
 const query = new URLSearchParams(location.search)
 const smoke = query.get('smoke') === '1'
@@ -19,7 +19,7 @@ const width = circuit.sourceSize + circuit.operations.length
 const put = (id: string, value: string) => {document.getElementById(id)!.textContent = value}
 put('operations', String(circuit.operations.length))
 let count = smoke ? Number(query.get('count') ?? '128') : 512
-if (!Number.isSafeInteger(count) || count < 1 || count > 8192) count = 128
+if (!Number.isSafeInteger(count) || count < 1 || count > MAX_SWARM_AGENTS) count = 128
 countSelect.value = String(count)
 let species = initialPopulation(count).species
 let cpuState = initialPopulation(count).state
@@ -105,6 +105,8 @@ async function restart() {
   status.textContent = backend.mode === 'gpu'
     ? 'WebGPU executing the steering circuit. Point into either flock to interact.'
     : 'WebGPU unavailable. Showing deterministic CPU fallback. ' + (backend.fallbackReason ?? '')
+  if (count >= 4096) status.textContent +=
+    ' Stress mode: host-side neighborhood search and Canvas2D rendering may dominate frame time.'
   maxError = 0; mismatches = 0; totalChecked = 0; frames = 0
   for (const canvas of [cpuCanvas, gpuCanvas]) {
     const ctx = canvas.getContext('2d')!
