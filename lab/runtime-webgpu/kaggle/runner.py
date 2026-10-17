@@ -114,12 +114,16 @@ def main():
         'kaggle_version':8,'adapter':'nvidia turing Tesla T4',
         'compute':'42/42','smoke':'pass','gallery_mismatches':0,'grid_mismatches':0,
         'state_mismatches':0}
-    small=execute('nvidia-benchmark-512-steps8',
-        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-benchmark-512-steps8.json'),
-          'benchmark','8','512'],180,True,ROOT)
-    large=execute('nvidia-benchmark-8192-steps8',
-        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-benchmark-8192-steps8.json'),
-          'benchmark','8','8192'],180,True,ROOT)
+    STATUS['prior_nvidia_benchmark']={'kaggle_version':11,'nvidia':True,
+      'small_512_steps8':{'cpu_ms':12.7,'specialized_gpu_ms':2.2,'handwritten_gpu_ms':2.0},
+      'large_8192_steps8':{'cpu_ms':82.9,'specialized_gpu_ms':6.0,'handwritten_gpu_ms':2.8},
+      'zero_mismatches':True}
+    small=execute('nvidia-benchmark-512-steps128',
+        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-benchmark-512-steps128.json'),
+          'benchmark','128','512'],240,True,ROOT)
+    large=execute('nvidia-benchmark-8192-steps128',
+        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-benchmark-8192-steps128.json'),
+          'benchmark','128','8192'],300,True,ROOT)
     STATUS['nvidia_small_benchmark_ok']=small
     STATUS['nvidia_large_benchmark_ok']=large
     STATUS['completed']=datetime.now(timezone.utc).isoformat()
