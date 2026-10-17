@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "date": "2026-10-17T18:19:23.001Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "resident-cloth complete solver hardware differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 8,
+  "count": 165,
+  "checked": 330,
+  "mismatches": 0,
+  "maxError": 0.09169387817382812,
+  "rms": 0.024209808486171314,
+  "pinnedErrors": 0,
+  "nonfinite": 0,
+  "gpuMs": 54.79999999701977,
+  "numericTolerance": 0.14,
+  "broken": 6,
+  "originalBroken": 0,
+  "dragError": 4.9151249283046744e-9,
+  "interactionSteps": 2
+}
