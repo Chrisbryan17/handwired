@@ -103,6 +103,7 @@ async function restart() {
   cpuState = population.state
   gpuState = cpuState.slice()
   const resident = engineSelect.value === 'resident'
+  strategySelect.disabled=resident
   document.body.classList.toggle('resident',resident)
   if(resident){
     const reference=initialPopulation(Math.min(count,256),3807)
