@@ -60,6 +60,8 @@ def main():
     if chrome:
         execute('browser-webgpu',[bun,'scripts/verify-webgpu-browser.ts',
           str(OUT/'browser-webgpu.json')],1200,True,ROOT)
+        execute('browser-benchmark',[bun,'scripts/verify-webgpu-browser.ts',
+          str(OUT/'browser-benchmark.json'),'benchmark','128'],1200,True,ROOT)
     else:
         STATUS['stages'].append({'name':'browser-webgpu','not_run':
           'No Chromium binary; Kaggle CUDA GPU does not imply WebGPU browser access'})
