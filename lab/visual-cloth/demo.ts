@@ -2,17 +2,22 @@ import {createWebGpuEvaluator,type WebGpuCircuitEvaluator} from '../../src/runti
 import {buildClothCircuit,CLOTH_SOURCE_SIZE} from './model.ts'
 import {makeCloth,clothSources,projectCloth,cpuClothFrame,tearNear,nearestNode,
   type Cloth,type ClothInteraction} from './physics.ts'
+import {ResidentClothGpu} from './gpu-resident.ts'
 const query=new URLSearchParams(location.search),smoke=query.get('smoke')==='1'
 const {circuit,outputWires}=buildClothCircuit(),width=circuit.sourceSize+circuit.operations.length
 const tool=document.querySelector<HTMLSelectElement>('#tool')!
 const wind=document.querySelector<HTMLInputElement>('#wind')!
 const strategy=document.querySelector<HTMLSelectElement>('#strategy')!
+const engine=document.querySelector<HTMLSelectElement>('#engine')!
+const wantsResident=query.get('resident')==='1'
+engine.value=smoke&&!wantsResident?'hybrid':'resident'
 const canvasCpu=document.querySelector<HTMLCanvasElement>('#cpu')!
 const canvasGpu=document.querySelector<HTMLCanvasElement>('#gpu')!
 const ctxCpu=canvasCpu.getContext('2d')!,ctxGpu=canvasGpu.getContext('2d')!
 const status=document.querySelector<HTMLElement>('#status')!
 const put=(id:string,value:string)=>{document.getElementById(id)!.textContent=value}
 let cpu=makeCloth(),gpu=makeCloth(),backend:WebGpuCircuitEvaluator|null=null
+let resident:ResidentClothGpu|null=null,pendingCut=false
 let needsReset=true,paused=false,frames=0,checks=0,mismatches=0,maxError=0,cpuMs=0,gpuMs=0
 const interact:ClothInteraction={dragged:null,x:.5,y:.5,wind:1.2}
 function canvasSize(canvas:HTMLCanvasElement,context:CanvasRenderingContext2D){
@@ -57,14 +62,29 @@ function draw(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,cloth:Cloth)
   }
 }
 async function reset(){
-  backend?.destroy();backend=null
+  backend?.destroy();backend=null;resident?.destroy();resident=null;pendingCut=false
   cpu=makeCloth();gpu=makeCloth();frames=0;checks=0;mismatches=0;maxError=0
   interact.dragged=null;interact.wind=Number(wind.value)
-  status.textContent='Compiling fabric motion circuit…'
-  backend=await createWebGpuEvaluator(circuit,{mode:smoke?'gpu':'auto',
-    capacity:cpu.columns*cpu.rows,strategy:strategy.value as 'specialized'|'monolithic'|'layers'})
-  status.textContent=backend.mode==='gpu'?'WebGPU Verlet integration active. Grab or cut the fabric.':
-    'CPU fallback: '+(backend.fallbackReason??'No WebGPU device')
+  status.textContent='Compiling neural Verlet, springs and GPU constraint kernels…'
+  if(engine.value==='resident'){
+    try{
+      resident=await ResidentClothGpu.create(gpu)
+      resident.load(gpu)
+      status.textContent='Full GPU cloth: spring forces, neural Verlet, collisions and tear masks.'
+    }catch(error){
+      if(smoke&&wantsResident)throw error
+      engine.value='hybrid'
+      status.textContent='Full GPU unavailable, falling back to hybrid: '+String(error)
+    }
+  }
+  if(resident===null){
+    backend=await createWebGpuEvaluator(circuit,{mode:smoke?'gpu':'auto',
+      capacity:cpu.columns*cpu.rows,strategy:strategy.value as 'specialized'|'monolithic'|'layers'})
+    status.textContent=backend.mode==='gpu'?'Hybrid WebGPU Verlet. Host computes forces and constraints.':
+      'CPU fallback: '+(backend.fallbackReason??'No WebGPU device')
+  }
+  put('checked-label',resident?'VERTEX POSITIONS CHECKED':'CIRCUIT WIRES VERIFIED')
+  put('mismatches-label',resident?'CPU POSE DIFFERENCES (>0.16)':'GPU MISMATCHES (>2e−5)')
   needsReset=false
   put('vertices',String(cpu.columns*cpu.rows));put('springs',String(cpu.springs.length))
 }
@@ -80,25 +100,43 @@ function compare(input:Float32Array,values:Float32Array){
   }
 }
 async function tick(){
-  if(needsReset||backend===null)await reset()
+  if(needsReset||(backend===null&&resident===null))await reset()
   if(paused)return
   interact.wind=Number(wind.value)
   const startCpu=performance.now(),c=cpuClothFrame(cpu,interact)
   cpu=c.next;cpuMs=performance.now()-startCpu
-  const inputs=clothSources(gpu,interact),startGpu=performance.now()
-  const values=await backend!.evaluate(inputs)
-  gpuMs=performance.now()-startGpu
-  if(smoke||frames%5===0)compare(inputs,values)
-  gpu=projectCloth(gpu,values,width,outputWires,interact)
+  if(resident!==null){
+    const startGpu=performance.now()
+    await resident.step({dragged:interact.dragged,x:interact.x,y:interact.y,
+      wind:interact.wind,cut:pendingCut,tearRadius:.025})
+    pendingCut=false
+    const values=await resident.read()
+    gpuMs=performance.now()-startGpu
+    gpu={...gpu,state:values,step:gpu.step+1}
+    if(smoke||frames%5===0){
+      for(let i=0;i<gpu.columns*gpu.rows;i++)for(const axis of [0,1]){
+        const at=i*4+axis,delta=Math.abs(values[at]!-cpu.state[at]!)
+        if(!Number.isFinite(delta)||delta>.16)mismatches++
+        maxError=Math.max(maxError,delta);checks++
+      }
+    }
+  }else{
+    const inputs=clothSources(gpu,interact),startGpu=performance.now()
+    const values=await backend!.evaluate(inputs)
+    gpuMs=performance.now()-startGpu
+    if(smoke||frames%5===0)compare(inputs,values)
+    gpu=projectCloth(gpu,values,width,outputWires,interact)
+  }
   frames++
   draw(canvasCpu,ctxCpu,cpu);draw(canvasGpu,ctxGpu,gpu)
   put('checked',checks.toLocaleString());put('mismatches',mismatches.toLocaleString())
   put('broken',String(gpu.springs.filter(e=>!e.alive).length))
   put('cpu-info','CPU '+cpuMs.toFixed(2)+'ms/frame · step '+frames)
-  put('gpu-info',backend!.mode.toUpperCase()+' '+gpuMs.toFixed(2)+'ms/frame · max err '+maxError.toExponential(1))
+  put('gpu-info',(resident?'FULL GPU':backend!.mode.toUpperCase())+' '+gpuMs.toFixed(2)+'ms/frame · max error '+maxError.toExponential(1))
   document.body.dataset.status=mismatches===0?'pass':'fail'
   if(smoke&&frames>=8){
-    const result={ok:mismatches===0&&backend!.mode==='gpu',mode:backend!.mode,frames,
+    const actualMode=resident?'gpu':backend!.mode
+    const result={ok:mismatches===0&&actualMode==='gpu',mode:actualMode,resident:resident!==null,frames,
       count:gpu.columns*gpu.rows,operations:circuit.operations.length,checked:checks,
       mismatches,maxError,cpuMs,gpuMs}
     document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify(result)
@@ -122,6 +160,7 @@ for(const canvas of [canvasCpu,canvasGpu]){
     if(event.buttons===1&&tool.value==='cut'){
       tearNear(cpu,interact.x,interact.y,.015)
       tearNear(gpu,interact.x,interact.y,.015)
+      pendingCut=true
     }
   }
   canvas.addEventListener('pointerdown',event=>{
@@ -132,6 +171,7 @@ for(const canvas of [canvasCpu,canvasGpu]){
     }else{
       tearNear(cpu,interact.x,interact.y,.024)
       tearNear(gpu,interact.x,interact.y,.024)
+      pendingCut=true
     }
   })
   canvas.addEventListener('pointermove',move)
@@ -143,4 +183,5 @@ document.querySelector<HTMLButtonElement>('#pause')!.onclick=()=>{
 document.querySelector<HTMLButtonElement>('#restart')!.onclick=()=>{
   needsReset=true;paused=false;put('pause','PAUSE')}
 strategy.onchange=()=>{needsReset=true}
+engine.onchange=()=>{needsReset=true}
 void loop()
