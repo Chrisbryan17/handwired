@@ -77,7 +77,7 @@ async function run() {
     await command('Page.enable')
     await command('Runtime.enable')
     await command('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await command('Page.navigate',{url:'http://127.0.0.1:39102/?smoke=1&count='+count+(process.argv.includes('--resident')?'&resident=1':'')})
+    await command('Page.navigate',{url:'http://127.0.0.1:39102/?smoke=1&count='+count+(process.argv.includes('--resident')?'&resident=1':process.argv.includes('--fast')?'&fast=1':'')})
     let smoke: Record<string,unknown> | null = null
     for(let k=0;k<240;k++) {
       await delay(250)
