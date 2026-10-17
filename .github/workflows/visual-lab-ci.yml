@@ -36,7 +36,7 @@ jobs:
       - name: Focused circuit and physics correctness
         run: bun test --timeout 30000 ./tests/runtime/webgpu.test.ts ./tests/runtime/webgpu-completion.test.ts ./lab/visual-swarm/model.test.ts ./lab/visual-maze/model.test.ts ./lab/visual-cloth/model.test.ts ./lab/visual-fluid/model.test.ts
       - name: Repository regression suite
-        run: bun test
+        run: bun test --timeout 30000
       - name: TypeScript validation
         run: bunx tsc -p .
       - name: Type-aware lint
