@@ -1,10 +1,15 @@
 import {createWebGpuEvaluator, type WebGpuCircuitEvaluator} from '../../src/runtime/webgpu.ts'
+import {ResidentSwarmGpu} from './gpu-resident.ts'
 import {buildSwarmCircuit, SOURCE_SIZE} from './model.ts'
 import {MAX_SWARM_AGENTS, buildSwarmInputs, initialPopulation, projectState, referenceFrame, type PointerState} from './simulation.ts'
 
 const query = new URLSearchParams(location.search)
 const smoke = query.get('smoke') === '1'
 const countSelect = document.querySelector<HTMLSelectElement>('#count')!
+const engineSelect = document.querySelector<HTMLSelectElement>('#engine')!
+const fastCanvas = document.querySelector<HTMLCanvasElement>('#gpu-fast')!
+const fastSmoke = smoke && query.get('resident') === '1'
+engineSelect.value = smoke && !fastSmoke ? 'exact' : 'resident'
 const strategySelect = document.querySelector<HTMLSelectElement>('#strategy')!
 const pointerSelect = document.querySelector<HTMLSelectElement>('#pointer')!
 const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!
@@ -25,6 +30,9 @@ let species = initialPopulation(count).species
 let cpuState = initialPopulation(count).state
 let gpuState = cpuState.slice()
 let backend: WebGpuCircuitEvaluator | null = null
+let fastGpu: ResidentSwarmGpu | null = null
+let cpuSpecies = species
+let renderFrames = 0
 let requestedRestart = true, paused = false, frames = 0, lastTime = performance.now()
 let maxError = 0, mismatches = 0, totalChecked = 0
 let cpuMs = 0, gpuMs = 0, gpuCircuitMs = 0
@@ -49,7 +57,7 @@ function render(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, st
   const rect = configureCanvas(canvas, context)
   context.fillStyle = 'rgba(7,12,27,0.29)'
   context.fillRect(0, 0, rect.width, rect.height)
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < state.length / 4; i++) {
     const at = i * 4
     const x = state[at]! * rect.width, y = state[at + 1]! * rect.height
     const vx = state[at + 2]!, vy = state[at + 3]!
@@ -88,13 +96,58 @@ function render(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, st
 }
 
 async function restart() {
-  backend?.destroy()
-  backend = null
+  backend?.destroy(); backend = null
+  fastGpu?.destroy();fastGpu = null
   count = smoke ? count : Number(countSelect.value)
   const population = initialPopulation(count, 3807)
   species = population.species
   cpuState = population.state
   gpuState = cpuState.slice()
+  const resident = engineSelect.value === 'resident'
+  document.body.classList.toggle('resident',resident)
+  if(resident){
+    const reference=initialPopulation(Math.min(count,256),3807)
+    cpuState=reference.state
+    cpuSpecies=reference.species
+    put('cpu-title','CPU Sample · '+cpuSpecies.length.toLocaleString())
+    put('gpu-description','Full GPU spatial grid + Handwired circuit + instanced renderer')
+    put('error-title','VALIDATION')
+    put('wires-title','READBACKS')
+    put('differences-title','COMPARISON')
+    put('error','GPU-native')
+    put('wires','0 / frame')
+    put('mismatches','Different algorithms')
+    const rect=fastCanvas.getBoundingClientRect()
+    const scale=Math.min(2,devicePixelRatio||1)
+    fastCanvas.width=Math.max(1,Math.floor(rect.width*scale))
+    fastCanvas.height=Math.max(1,Math.floor(rect.height*scale))
+    status.textContent='Compiling GPU-resident Handwired boids…'
+    try{
+      fastGpu=await ResidentSwarmGpu.create(fastCanvas,count)
+      put('device','FULL WEBGPU')
+      status.textContent='GPU-resident approximate boids: no host neighborhood loops or per-frame readback.'
+    }catch(error){
+      if(fastSmoke)throw error
+      put('device','GPU UNAVAILABLE')
+      engineSelect.value='exact'
+      fastGpu=null
+      // Do not lock up a weak device in the 16,384-agent legacy mode.
+      if(count>1024){count=512;countSelect.value='512'}
+      status.textContent='Resident WebGPU unavailable; falling back to exact CPU mode: '+String(error)
+      return restart()
+    }
+    requestedRestart=false
+    frames=0;renderFrames=0;lastTime=performance.now()
+    const size=configureCanvas(cpuCanvas,cpuContext)
+    cpuContext.fillStyle='#070c1b';cpuContext.fillRect(0,0,size.width,size.height)
+    return
+  }
+  cpuSpecies=species
+  put('cpu-title','CPU Reference · '+count.toLocaleString())
+  put('gpu-description','Legacy batched circuit + host neighborhood + readback')
+  put('error-title','MAX ABS ERROR')
+  put('wires-title','CHECKED WIRES')
+  put('differences-title','GPU DIFFERENCES')
   const strategy = strategySelect.value as 'specialized' | 'monolithic' | 'layers'
   status.textContent = 'Compiling ' + strategy + ' Handwired circuit…'
   put('device', 'INITIALIZING')
@@ -131,8 +184,55 @@ function compareAgainstCpuOracle(input: Float32Array, actual: Float32Array) {
 }
 
 async function tick() {
-  if (requestedRestart || backend === null) await restart()
+  if (requestedRestart || (backend === null && fastGpu === null)) await restart()
   if (paused) return
+  if(fastGpu!==null){
+    const started=performance.now()
+    const canvasRect=fastCanvas.getBoundingClientRect()
+    const ratio=Math.min(2,window.devicePixelRatio||1)
+    const canvasWidth=Math.max(1,Math.round(canvasRect.width*ratio))
+    const canvasHeight=Math.max(1,Math.round(canvasRect.height*ratio))
+    if(fastCanvas.width!==canvasWidth||fastCanvas.height!==canvasHeight){
+      fastCanvas.width=canvasWidth;fastCanvas.height=canvasHeight
+    }
+    fastGpu.frame(pointer,fastCanvas.width,fastCanvas.height)
+    gpuMs=performance.now()-started
+    // Animate a small, explicitly independent exact CPU reference.
+    // This cannot be used as a same-population speedup claim.
+    if(frames%2===0){
+      const cpuStart=performance.now()
+      cpuState=referenceFrame(cpuState,cpuSpecies,pointer).state
+      cpuMs=performance.now()-cpuStart
+      render(cpuCanvas,cpuContext,cpuState)
+    }
+    frames++;renderFrames++
+    if(frames%15===0||smoke){
+      const now=performance.now()
+      const fps=15_000/Math.max(1,now-lastTime)
+      put('fps',fps.toFixed(1))
+      put('cpu-ms',cpuMs.toFixed(2)+' ms / 256-agent sample (not same workload)')
+      put('gpu-ms',gpuMs.toFixed(2)+' ms CPU submission; GPU runs asynchronously')
+      lastTime=now
+    }
+    document.body.dataset.status='pass'
+    if(fastSmoke&&frames>=8){
+      // Only the verification run transfers state to CPU.
+      const result=await fastGpu.readState()
+      let nonfinite=0,outOfBounds=0
+      for(let i=0;i<result.length;i+=4){
+        const [x,y,vx,vy]=[result[i]!,result[i+1]!,result[i+2]!,result[i+3]!]
+        if(![x,y,vx,vy].every(Number.isFinite))nonfinite++
+        if(x<0||x>1||y<0||y>1)outOfBounds++
+      }
+      const ok=nonfinite===0&&outOfBounds===0
+      document.querySelector<HTMLElement>('#smoke')!.textContent=
+        JSON.stringify({ok,mode:'gpu',resident:true,count,frames,nonfinite,outOfBounds,
+          totalChecked:result.length,mismatches:nonfinite+outOfBounds})
+      document.body.dataset.status=ok?'pass':'fail'
+      paused=true
+    }
+    return
+  }
   const startCpu = performance.now()
   cpuState = referenceFrame(cpuState, species, pointer).state
   cpuMs = performance.now() - startCpu
@@ -184,7 +284,7 @@ async function loop() {
   if (!(smoke && paused)) requestAnimationFrame(() => {void loop()})
 }
 
-for (const canvas of [cpuCanvas, gpuCanvas]) {
+for (const canvas of [cpuCanvas, gpuCanvas, fastCanvas]) {
   canvas.addEventListener('pointermove', event => {
     const rect = canvas.getBoundingClientRect()
     pointer.x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
@@ -201,4 +301,5 @@ pauseButton.addEventListener('click', () => {
 restartButton.addEventListener('click', () => {requestedRestart = true; paused = false; pauseButton.textContent = 'PAUSE'})
 countSelect.addEventListener('change', () => {requestedRestart = true})
 strategySelect.addEventListener('change', () => {requestedRestart = true})
+engineSelect.addEventListener('change', () => {requestedRestart = true})
 void loop()
