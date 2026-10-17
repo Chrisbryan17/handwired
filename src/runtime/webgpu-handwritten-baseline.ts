@@ -1,7 +1,39 @@
 // Independent handwritten GPU baseline for the six-operation swarm benchmark.
 // Deliberately NOT constructed from a Handwired Circuit or its shader generator.
-const shader = "\nstruct Params {count:u32,steps:u32,pad0:u32,pad1:u32};\n@group(0) @binding(0) var<uniform> p:Params;\n@group(0) @binding(1) var<storage,read> input:array<f32>;\n@group(0) @binding(2) var<storage,read_write> output:array<f32>;\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid:vec3<u32>){\n  if(gid.x>=p.count){return;}\n  let src=gid.x*4u;\n  var x=input[src]; var y=input[src+1u];
-  var vx=input[src+2u]; var vy=input[src+3u];\n  var nx:f32=0.0;var ny:f32=0.0;\n  var fx:f32=0.0;var fy:f32=0.0;\n  var nvx:f32=0.0;var nvy:f32=0.0;\n  var beforeX:f32=0.0;var beforeY:f32=0.0;\n  var beforeVx:f32=0.0;var beforeVy:f32=0.0;\n  for(var t=0u;t<p.steps;t=t+1u){\n    beforeX=x;beforeY=y;beforeVx=vx;beforeVy=vy;\n    nx=0.0+(1.0*x); nx=nx+(0.016*vx);\n    ny=0.0+(1.0*y); ny=ny+(0.016*vy);\n    fx=0.035+(-0.07*nx);\n    fy=0.035+(-0.07*ny);\n    nvx=0.0+(0.997*vx);nvx=nvx+(0.016*fx);\n    nvy=0.0+(0.997*vy);nvy=nvy+(0.016*fy);\n    x=nx;y=ny;vx=nvx;vy=nvy;\n  }\n  let out=gid.x*10u;\n  output[out]=beforeX;output[out+1u]=beforeY;\n  output[out+2u]=beforeVx;output[out+3u]=beforeVy;\n  output[out+4u]=nx;output[out+5u]=ny;\n  output[out+6u]=fx;output[out+7u]=fy;\n  output[out+8u]=nvx;output[out+9u]=nvy;\n}\n"
+const shader = /* wgsl */ `
+struct Params {count:u32,steps:u32,pad0:u32,pad1:u32};
+@group(0) @binding(0) var<uniform> p:Params;
+@group(0) @binding(1) var<storage,read> input:array<f32>;
+@group(0) @binding(2) var<storage,read_write> output:array<f32>;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid:vec3<u32>){
+  if(gid.x>=p.count){return;}
+  let src=gid.x*4u;
+  var x=input[src]; var y=input[src+1u];
+  var vx=input[src+2u]; var vy=input[src+3u];
+  var nx:f32=0.0;var ny:f32=0.0;
+  var fx:f32=0.0;var fy:f32=0.0;
+  var nvx:f32=0.0;var nvy:f32=0.0;
+  var beforeX:f32=0.0;var beforeY:f32=0.0;
+  var beforeVx:f32=0.0;var beforeVy:f32=0.0;
+  for(var t=0u;t<p.steps;t=t+1u){
+    beforeX=x;beforeY=y;beforeVx=vx;beforeVy=vy;
+    nx=0.0+(1.0*x); nx=nx+(0.016*vx);
+    ny=0.0+(1.0*y); ny=ny+(0.016*vy);
+    fx=0.035+(-0.07*nx);
+    fy=0.035+(-0.07*ny);
+    nvx=0.0+(0.997*vx);nvx=nvx+(0.016*fx);
+    nvy=0.0+(0.997*vy);nvy=nvy+(0.016*fy);
+    x=nx;y=ny;vx=nvx;vy=nvy;
+  }
+  let out=gid.x*10u;
+  output[out]=beforeX;output[out+1u]=beforeY;
+  output[out+2u]=beforeVx;output[out+3u]=beforeVy;
+  output[out+4u]=nx;output[out+5u]=ny;
+  output[out+6u]=fx;output[out+7u]=fy;
+  output[out+8u]=nvx;output[out+9u]=nvy;
+}
+`
 const U={MAP_READ:1,COPY_SRC:4,COPY_DST:8,UNIFORM:64,STORAGE:128} as const
 export class HandwrittenSwarmGpu {
   private readonly buffers:GPUBuffer[]=[]
