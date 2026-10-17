@@ -132,10 +132,10 @@ async function tick() {
       }
       checked=maze.walls.length*3;differences=mismatches
       fastValidated=true
-      put('wires',checked.toLocaleString()+' state values, final readback')
+      put('wires',checked.toLocaleString()+' at checkpoint')
       put('errors',String(mismatches))
       const path=cpu.visited[maze.goal]===1?reconstructPath(maze,cpu):[]
-      put('path',path.length?String(path.length):'NOT FOUND')
+      put('path',!cpu.finished?'SEARCHING':path.length?String(path.length):'NOT FOUND')
       if(path.length&&mismatches===0){resident.setPath(path);resident.draw()}
       status.textContent=mismatches===0?'GPU-resident BFS verified against independent CPU BFS.':'GPU-vs-CPU BFS mismatch: '+mismatches
       document.body.dataset.status=mismatches===0?'pass':'fail'
