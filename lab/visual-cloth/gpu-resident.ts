@@ -46,7 +46,7 @@ fn valid(x:i32,y:i32)->bool {
  return x>=0&&y>=0&&x<i32(p.width)&&y<i32(p.height);
 }
 fn neighbor(i:u32,d:vec2<i32>)->u32 {
- let x=i32(i%p.width)+d.x, y=i32(i/p.width)+d.y;
+ let x=i32(i%p.width)+d.x; let y=i32(i/p.width)+d.y;
  return u32(y)*p.width+u32(x);
 }
 fn rest(d:vec2<i32>)->f32{
@@ -65,11 +65,11 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
  let i=tid.x;if(i>=p.width*p.height){return;}
  let a=i*4u;let current=vec2<f32>(src[a],src[a+1u]);
  var force=vec2<f32>(0.0);
- let gridX=i32(i%p.width),gridY=i32(i/p.width);
+ let gridX=i32(i%p.width);let gridY=i32(i/p.width);
  let d=directions();
  for(var k=0u;k<8u;k=k+1u) {
   if((masks[i]&(1u<<k))!=0u){continue;}
-  let nx=gridX+d[k].x,ny=gridY+d[k].y;
+  let nx=gridX+d[k].x;let ny=gridY+d[k].y;
   if(!valid(nx,ny)){continue;}
   let n=neighbor(i,d[k])*4u;
   let delta=vec2<f32>(src[n],src[n+1u])-current;
@@ -105,14 +105,14 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
  if(isHeld(i)){pos=heldPosition(i);}
  else {
   let d=directions();
-  let gx=i32(i%p.width),gy=i32(i/p.width);
+  let gx=i32(i%p.width);let gy=i32(i/p.width);
   var corrections=vec2<f32>(0.0);
   var total=0.0;
   for(var k=0u;k<8u;k=k+1u){
    if((masks[i]&(1u<<k))!=0u){continue;}
-   let nx=gx+d[k].x,ny=gy+d[k].y;
+   let nx=gx+d[k].x;let ny=gy+d[k].y;
    if(!valid(nx,ny)){continue;}
-   let j=neighbor(i,d[k]),b=j*4u;
+   let j=neighbor(i,d[k]);let b=j*4u;
    let delta=vec2<f32>(src[b],src[b+1u])-pos;
    let dist=length(delta);
    if(dist<0.00000001){continue;}
@@ -143,11 +143,11 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
  if(p.cut!=0u){
   let here=vec2<f32>(positions[i*4u],positions[i*4u+1u]);
   let d=directions();
-  let gx=i32(i%p.width),gy=i32(i/p.width);
+  let gx=i32(i%p.width);let gy=i32(i/p.width);
   for(var k=0u;k<8u;k=k+1u){
-   let nx=gx+d[k].x,ny=gy+d[k].y;
+   let nx=gx+d[k].x;let ny=gy+d[k].y;
    if(!valid(nx,ny)){continue;}
-   let j=neighbor(i,d[k]),there=vec2<f32>(positions[j*4u],positions[j*4u+1u]);
+   let j=neighbor(i,d[k]);let there=vec2<f32>(positions[j*4u],positions[j*4u+1u]);
    let displacement=there-here;
    let center=vec2<f32>(p.cutX,p.cutY);
    let t=clamp(dot(center-here,displacement)/max(0.000000001,dot(displacement,displacement)),0.0,1.0);
