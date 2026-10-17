@@ -32,7 +32,6 @@ let gpuState = cpuState.slice()
 let backend: WebGpuCircuitEvaluator | null = null
 let fastGpu: ResidentSwarmGpu | null = null
 let cpuSpecies = species
-let renderFrames = 0
 let requestedRestart = true, paused = false, frames = 0, lastTime = performance.now()
 let maxError = 0, mismatches = 0, totalChecked = 0
 let cpuMs = 0, gpuMs = 0, gpuCircuitMs = 0
@@ -111,12 +110,16 @@ async function restart() {
     cpuSpecies=reference.species
     put('cpu-title','CPU Sample · '+cpuSpecies.length.toLocaleString())
     put('gpu-description','Full GPU spatial grid + Handwired circuit + instanced renderer')
-    put('error-title','VALIDATION')
+    put('error-title','EXECUTION MODE')
     put('wires-title','READBACKS')
-    put('differences-title','COMPARISON')
+    put('differences-title','NUMERIC PARITY')
     put('error','GPU-native')
     put('wires','0 / frame')
-    put('mismatches','Different algorithms')
+    put('mismatches','N/A')
+    put('cpu-description','Exact CPU / reduced sample (not an equivalent workload)')
+    put('error-description','Real GPU computation; smoke-tested separately')
+    put('wires-description','Zero per-frame CPU readbacks')
+    put('differences-description','The fast path uses spatial-cell approximation')
     const rect=fastCanvas.getBoundingClientRect()
     const scale=Math.min(2,devicePixelRatio||1)
     fastCanvas.width=Math.max(1,Math.floor(rect.width*scale))
@@ -137,7 +140,7 @@ async function restart() {
       return restart()
     }
     requestedRestart=false
-    frames=0;renderFrames=0;lastTime=performance.now()
+    frames=0;lastTime=performance.now()
     const size=configureCanvas(cpuCanvas,cpuContext)
     cpuContext.fillStyle='#070c1b';cpuContext.fillRect(0,0,size.width,size.height)
     return
@@ -148,6 +151,10 @@ async function restart() {
   put('error-title','MAX ABS ERROR')
   put('wires-title','CHECKED WIRES')
   put('differences-title','GPU DIFFERENCES')
+  put('cpu-description','Same agent inputs and equations')
+  put('error-description','vs same-input CPU oracle')
+  put('wires-description','cumulative validated wires')
+  put('differences-description','threshold 2e−5')
   const strategy = strategySelect.value as 'specialized' | 'monolithic' | 'layers'
   status.textContent = 'Compiling ' + strategy + ' Handwired circuit…'
   put('device', 'INITIALIZING')
@@ -205,12 +212,13 @@ async function tick() {
       cpuMs=performance.now()-cpuStart
       render(cpuCanvas,cpuContext,cpuState)
     }
-    frames++;renderFrames++
+    frames++
     if(frames%15===0||smoke){
       const now=performance.now()
-      const fps=15_000/Math.max(1,now-lastTime)
+      const sampledFrames=smoke?1:15
+      const fps=sampledFrames*1000/Math.max(1,now-lastTime)
       put('fps',fps.toFixed(1))
-      put('cpu-ms',cpuMs.toFixed(2)+' ms / 256-agent sample (not same workload)')
+      put('cpu-ms',cpuMs.toFixed(2)+' ms / '+cpuSpecies.length+'-agent sample (not same workload)')
       put('gpu-ms',gpuMs.toFixed(2)+' ms CPU submission; GPU runs asynchronously')
       lastTime=now
     }
