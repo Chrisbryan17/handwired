@@ -19,7 +19,7 @@ export function generateMaze(columns=47,rows=31,seed=215){
       if(x<1||x>=columns-1||y<1||y>=rows-1||walls[position(columns,x,y)]===0)continue
       options.push({x,y,mx:cx+dx,my:cy+dy})
     }
-    if(!options.length){stack.pop();continue}
+    if(options.length===0){stack.pop();continue}
     const next=options[Math.floor(random()*options.length)]!
     walls[position(columns,next.mx,next.my)]=0
     walls[position(columns,next.x,next.y)]=0
@@ -67,9 +67,9 @@ export function referenceWave(maze:Maze,state:SearchState):SearchState {
   const distance=state.distance.slice(),depth=state.depth+1
   let advanced=false
   for(let i=0;i<maze.walls.length;i++){
-    if(!state.frontier[i])continue
+    if(state.frontier[i]===0)continue
     for(const other of adjacent(maze,i)){
-      if(maze.walls[other]!==0||visited[other])continue
+      if(maze.walls[other]!==0||visited[other]===1)continue
       visited[other]=1;frontier[other]=1;distance[other]=depth;advanced=true
     }
   }
@@ -88,7 +88,7 @@ export function circuitWave(maze:Maze,state:SearchState,values:Float32Array,
       Math.abs(f-Math.round(f))>2e-5)throw new Error('circuit produced non-bit BFS state')
     visited[i]=v>=0.5?1:0
     frontier[i]=f>=0.5?1:0
-    if(frontier[i]){advanced=true;distance[i]=state.depth+1}
+    if(frontier[i]===1){advanced=true;distance[i]=state.depth+1}
   }
   return {visited,frontier,distance,depth:state.depth+1,
     finished:visited[maze.goal]===1||!advanced}
