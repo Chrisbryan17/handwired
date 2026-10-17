@@ -8,7 +8,7 @@ import {tmpdir} from 'node:os'
 
 const report = process.argv[2] ?? 'lab/visual-maze/results/smoke.json'
 const count = 128
-const server = Bun.serve({hostname: '127.0.0.1', port: 39101, routes: {'/': page}})
+const server = Bun.serve({hostname: '127.0.0.1', port: 0, routes: {'/': page}})
 const profile = mkdtempSync(join(tmpdir(), 'handwired-maze-'))
 const devtoolsPort = 49401
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -77,7 +77,7 @@ async function run() {
     await command('Page.enable')
     await command('Runtime.enable')
     await command('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await command('Page.navigate',{url:'http://127.0.0.1:39101/?smoke=1&count='+count})
+    await command('Page.navigate',{url:String(server.url)+'?smoke=1&count='+count+(process.argv.includes('--fast')?'&fast=1':'')})
     let smoke: Record<string,unknown> | null = null
     for(let k=0;k<240;k++) {
       await delay(250)

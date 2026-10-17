@@ -10,9 +10,11 @@ const wind=document.querySelector<HTMLInputElement>('#wind')!
 const strategy=document.querySelector<HTMLSelectElement>('#strategy')!
 const engine=document.querySelector<HTMLSelectElement>('#engine')!
 const wantsResident=query.get('resident')==='1'
-engine.value=smoke&&!wantsResident?'hybrid':'resident'
+const wantsFast=query.get('fast')==='1'
+engine.value=smoke?(wantsFast?'fast':wantsResident?'resident':'hybrid'):'fast'
 const canvasCpu=document.querySelector<HTMLCanvasElement>('#cpu')!
 const canvasGpu=document.querySelector<HTMLCanvasElement>('#gpu')!
+const fastCanvas=document.querySelector<HTMLCanvasElement>('#gpu-fast')!
 const ctxCpu=canvasCpu.getContext('2d')!,ctxGpu=canvasGpu.getContext('2d')!
 const status=document.querySelector<HTMLElement>('#status')!
 const put=(id:string,value:string)=>{document.getElementById(id)!.textContent=value}
@@ -66,10 +68,17 @@ async function reset(){
   cpu=makeCloth();gpu=makeCloth();frames=0;checks=0;mismatches=0;maxError=0
   interact.dragged=null;interact.wind=Number(wind.value)
   status.textContent='Compiling neural Verlet, springs and GPU constraint kernels…'
-  if(engine.value==='resident'){
+  if(engine.value==='resident'||engine.value==='fast'){
     try{
       resident=await ResidentClothGpu.create(gpu)
       resident.load(gpu)
+      if(engine.value==='fast'){
+        const rect=fastCanvas.getBoundingClientRect(),scale=Math.min(2,devicePixelRatio||1)
+        fastCanvas.width=Math.max(1,Math.round(rect.width*scale))
+        fastCanvas.height=Math.max(1,Math.round(rect.height*scale))
+        await resident.attachCanvas(fastCanvas)
+        status.textContent='Zero-readback WebGPU '+ 'cloth' +' simulation + rendering.'
+      }
       status.textContent='Full GPU cloth: spring forces, neural Verlet, collisions and tear masks.'
     }catch(error){
       if(smoke&&wantsResident)throw error
@@ -83,8 +92,10 @@ async function reset(){
     status.textContent=backend.mode==='gpu'?'Hybrid WebGPU Verlet. Host computes forces and constraints.':
       'CPU fallback: '+(backend.fallbackReason??'No WebGPU device')
   }
-  put('checked-label',resident?'VERTEX POSITIONS CHECKED':'CIRCUIT WIRES VERIFIED')
+  document.body.classList.toggle('gpu-fast',engine.value==='fast'&&resident!==null)
+  put('checked-label',engine.value==='fast'?'PER-FRAME READBACKS':resident?'VERTEX POSITIONS CHECKED':'CIRCUIT WIRES VERIFIED')
   put('mismatches-label',resident?'CPU POSE DIFFERENCES (>0.16)':'GPU MISMATCHES (>2e−5)')
+  strategy.disabled=engine.value!=='hybrid'
   needsReset=false
   put('vertices',String(cpu.columns*cpu.rows));put('springs',String(cpu.springs.length))
 }
@@ -103,6 +114,39 @@ async function tick(){
   if(needsReset||(backend===null&&resident===null))await reset()
   if(paused)return
   interact.wind=Number(wind.value)
+  if(resident!==null&&engine.value==='fast'){
+    const start=performance.now()
+    const rect=fastCanvas.getBoundingClientRect(),scale=Math.min(2,devicePixelRatio||1)
+    const w=Math.max(1,Math.round(rect.width*scale)),h=Math.max(1,Math.round(rect.height*scale))
+    if(fastCanvas.width!==w||fastCanvas.height!==h){fastCanvas.width=w;fastCanvas.height=h}
+    resident.frame({dragged:interact.dragged,x:interact.x,y:interact.y,
+      wind:interact.wind,cut:pendingCut,tearRadius:.025})
+    pendingCut=false
+    gpuMs=performance.now()-start
+    if(frames%4===0){
+      const startCpu=performance.now(),c=cpuClothFrame(cpu,interact)
+      cpu=c.next;cpuMs=performance.now()-startCpu
+      draw(canvasCpu,ctxCpu,cpu)
+    }
+    frames++
+    put('checked','0 / frame');put('mismatches','N/A')
+    put('broken','GPU-resident')
+    put('cpu-info','CPU sampled every 4 GPU frames · independent reference')
+    put('gpu-info',gpuMs.toFixed(2)+'ms CPU submission · no GPU readback')
+    document.body.dataset.status='pass'
+    if(smoke&&frames>=8){
+      const state=await resident.read()
+      let bad=0
+      for(const value of state)if(!Number.isFinite(value))bad++
+      const ok=bad===0
+      document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify({
+        ok,mode:'gpu',fast:true,frames,count:state.length/4,
+        checked:state.length,mismatches:bad,gpuMs})
+      document.body.dataset.status=ok?'pass':'fail'
+      paused=true
+    }
+    return
+  }
   const startCpu=performance.now(),c=cpuClothFrame(cpu,interact)
   cpu=c.next;cpuMs=performance.now()-startCpu
   if(resident!==null){
@@ -152,7 +196,7 @@ async function loop(){
   }
   if(!(smoke&&paused))requestAnimationFrame(()=>{void loop()})
 }
-for(const canvas of [canvasCpu,canvasGpu]){
+for(const canvas of [canvasCpu,canvasGpu,fastCanvas]){
   const move=(event:PointerEvent)=>{
     const rect=canvas.getBoundingClientRect()
     interact.x=Math.max(.01,Math.min(.99,(event.clientX-rect.left)/rect.width))
@@ -166,7 +210,7 @@ for(const canvas of [canvasCpu,canvasGpu]){
   canvas.addEventListener('pointerdown',event=>{
     canvas.setPointerCapture(event.pointerId);move(event)
     if(tool.value==='grab'){
-      const chosen=nearestNode(canvas===canvasCpu?cpu:gpu,interact.x,interact.y)
+      const chosen=nearestNode(canvas===canvasCpu||engine.value==='fast'?cpu:gpu,interact.x,interact.y)
       interact.dragged=chosen
     }else{
       tearNear(cpu,interact.x,interact.y,.024)

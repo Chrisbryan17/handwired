@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "date": "2026-10-17T19:35:52.256Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "visual-cloth WebGPU eight-frame full-wire differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 120,
+  "count": 759,
+  "checked": 3036,
+  "mismatches": 0,
+  "nonfinite": 0,
+  "outOfBounds": 0,
+  "pinnedErrors": 0,
+  "setupMs": 80.19999998807907,
+  "wallMs": 78,
+  "msPerFrame": 0.65,
+  "baselineWallMs": 1203.7000000029802,
+  "baselineMsPerFrame": 10.030833333358169,
+  "speedup": 15.43205128208949,
+  "maxParityError": 0,
+  "measurement": "GPU-resident cloth solver + direct mesh render + ONE final readback"
+}

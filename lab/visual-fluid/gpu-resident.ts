@@ -118,6 +118,42 @@ for(var k=2u;k<5u;k=k+1u){dst[i*5u+k]=clamp(src[i*5u+k]*0.998,0.0,6.0);}
 }`
 
 export const fluidGpuWgsl = {advectionWGSL,diffusionWGSL,divergenceWGSL,jacobiWGSL,projectWGSL}
+
+const fluidDisplayWgsl = `
+@group(0) @binding(0) var<storage,read> field:array<f32>;
+struct Geometry { @builtin(position) pos:vec4<f32>,@location(0) uv:vec2<f32> }
+@vertex fn vs(@builtin(vertex_index) vertex:u32)->Geometry {
+  var pos=array<vec2<f32>,3>(
+    vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0));
+  var out:Geometry;
+  out.pos=vec4<f32>(pos[vertex],0.0,1.0);
+  out.uv=vec2<f32>(0.5+0.5*pos[vertex].x,0.5-0.5*pos[vertex].y);
+  return out;
+}
+struct Dimensions { width:u32,height:u32,pad0:u32,pad1:u32 };
+@group(0) @binding(1) var<uniform> dims:Dimensions;
+@fragment fn fs(@location(0) uv:vec2<f32>)->@location(0) vec4<f32> {
+  let pixel=clamp(uv*vec2<f32>(f32(dims.width),f32(dims.height))-vec2<f32>(0.5),
+    vec2<f32>(0.0),vec2<f32>(f32(dims.width-1u),f32(dims.height-1u)));
+  let x0=u32(floor(pixel.x));let y0=u32(floor(pixel.y));
+  let x1=min(x0+1u,dims.width-1u);let y1=min(y0+1u,dims.height-1u);
+  let dx=pixel.x-f32(x0);let dy=pixel.y-f32(y0);
+  let a=(y0*dims.width+x0)*5u;
+  let b=(y0*dims.width+x1)*5u;
+  let c=(y1*dims.width+x0)*5u;
+  let d=(y1*dims.width+x1)*5u;
+  let top=mix(vec3<f32>(field[a+2u],field[a+3u],field[a+4u]),
+    vec3<f32>(field[b+2u],field[b+3u],field[b+4u]),dx);
+  let bottom=mix(vec3<f32>(field[c+2u],field[c+3u],field[c+4u]),
+    vec3<f32>(field[d+2u],field[d+3u],field[d+4u]),dx);
+  let color=mix(top,bottom,dy);
+  let rgb=vec3<f32>(1.0)-exp(-max(color,vec3<f32>(0.0))*1.15);
+  let glow=min(1.0,(rgb.x+rgb.y+rgb.z)*0.22);
+  return vec4<f32>(vec3<f32>(0.0235,0.0235,0.0863)+
+    rgb*vec3<f32>(0.92,0.82,0.86)+glow*vec3<f32>(0.15,0.13,0.16),1.0);
+}
+`
+
 export type FluidAdvectionKernel = 'handwired' | 'handwritten'
 
 export class ResidentFluidGpu {
@@ -132,6 +168,10 @@ export class ResidentFluidGpu {
   private readonly params:GPUBuffer
   private readonly pipelines:Record<string,GPUComputePipeline>
   private readonly groups:Record<string,GPUBindGroup[]>
+  private displayContext:GPUCanvasContext|null=null
+  private displayPipeline:GPURenderPipeline|null=null
+  private displayGroups:[GPUBindGroup,GPUBindGroup]|null=null
+  private displayDims:GPUBuffer|null=null
   private current=0
   private loaded=false
   private lost:string|null=null
@@ -225,7 +265,35 @@ export class ResidentFluidGpu {
     v.setUint32(32,pointer?1:0,true);v.setFloat32(36,this.stepCount*.035,true)
     this.device.queue.writeBuffer(this.params,0,params)
   }
-  async step(pointer?:FluidPointer){
+  async attachCanvas(canvas:HTMLCanvasElement){
+    this.ensure()
+    const context=canvas.getContext('webgpu') as GPUCanvasContext|null
+    if(!context)throw new Error('WebGPU rendering context unavailable')
+    const format=navigator.gpu.getPreferredCanvasFormat()
+    context.configure({device:this.device,format,alphaMode:'opaque'})
+    const dimensions=this.device.createBuffer({size:16,usage:BufferUsage.UNIFORM|BufferUsage.COPY_DST})
+    this.device.queue.writeBuffer(dimensions,0,new Uint32Array([this.width,this.height,0,0]))
+    try{
+      const shader=this.device.createShaderModule({code:fluidDisplayWgsl})
+      const errors=(await shader.getCompilationInfo()).messages.filter(m=>m.type==='error')
+      if(errors.length)throw new Error('fluid display WGSL: '+errors.map(m=>m.message).join('; '))
+      const pipeline=await this.device.createRenderPipelineAsync({
+        layout:'auto',vertex:{module:shader,entryPoint:'vs'},
+        fragment:{module:shader,entryPoint:'fs',targets:[{format}]},
+        primitive:{topology:'triangle-list'},
+      })
+      const bind=(buffer:GPUBuffer)=>this.device.createBindGroup({
+        layout:pipeline.getBindGroupLayout(0),entries:[
+          {binding:0,resource:{buffer}},{binding:1,resource:{buffer:dimensions}},
+        ],
+      })
+      this.displayContext=context;this.displayPipeline=pipeline
+      this.displayGroups=[bind(this.fields[0]),bind(this.fields[1])]
+      this.displayDims=dimensions
+    }catch(error){dimensions.destroy();context.unconfigure();throw error}
+  }
+  frame(pointer?:FluidPointer){
+
     this.ensure()
     if(!this.loaded)throw new Error('load fluid before stepping')
     this.writeParams(pointer)
@@ -244,9 +312,23 @@ export class ResidentFluidGpu {
     encoder.clearBuffer(this.pressure[0]);encoder.clearBuffer(this.pressure[1])
     for(let n=0;n<20;n++)pass('jacobi',n%2)
     pass('project',p*2)
+    const next=1-p
+    if(this.displayContext!==null&&this.displayPipeline!==null&&this.displayGroups!==null){
+      const render=encoder.beginRenderPass({colorAttachments:[{
+        view:this.displayContext.getCurrentTexture().createView(),loadOp:'clear',storeOp:'store',
+        clearValue:{r:0.02,g:0.02,b:0.065,a:1},
+      }]})
+      render.setPipeline(this.displayPipeline)
+      render.setBindGroup(0,this.displayGroups[next])
+      render.draw(3)
+      render.end()
+    }
     this.device.queue.submit([encoder.finish()])
+    this.current=next;this.stepCount++;this.ensure()
+  }
+  async step(pointer?:FluidPointer){
+    this.frame(pointer)
     await this.device.queue.onSubmittedWorkDone()
-    this.current=1-p;this.stepCount++
     this.ensure()
   }
   async read():Promise<Float32Array> {
@@ -264,5 +346,5 @@ export class ResidentFluidGpu {
       return result
     }finally{staging.destroy()}
   }
-  destroy(){if(this.disposed)return;this.disposed=true;for(const b of this.buffers)b.destroy()}
+  destroy(){if(this.disposed)return;this.disposed=true;this.displayDims?.destroy();this.displayContext?.unconfigure();for(const b of this.buffers)b.destroy()}
 }

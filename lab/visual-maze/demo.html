@@ -3,25 +3,26 @@
 <meta name="theme-color" content="#06091c"><title>Neural Maze — Handwired Visual Lab</title>
 <link rel="stylesheet" href="./demo.css"></head>
 <body><main class="shell">
-<header class="top"><a class="brand" href="https://github.com/Chrisbryan17/handwired">HANDWIRED <b>✳</b></a><span>VISUAL LAB / EXPERIMENT 02</span><a href="https://github.com/Chrisbryan17/handwired/tree/feat/visual-maze-20261017">SOURCE ↗</a></header>
+<header class="top"><a class="brand" href="https://github.com/Chrisbryan17/handwired">HANDWIRED <b>✳</b></a><span>VISUAL LAB / EXPERIMENT 02</span><a href="https://github.com/Chrisbryan17/handwired/tree/main/lab/visual-maze">SOURCE ↗</a></header>
 <div class="hero"><div class="kicker">ALGORITHMIC SEARCH / NO TRAINING</div>
 <h1>A maze, solved by a <em>neural circuit.</em></h1>
 <p>Watch a breadth-first search wavefront spread across the unknown. Every search expansion is calculated by a Handwired program. Both views use identical walls and independent search state.</p></div>
 <div class="toolbar">
 <label>MAZE <select id="size"><option value="31">31 × 21</option><option value="47" selected>47 × 31</option><option value="61">61 × 39</option></select></label>
-<label>GPU EXECUTION <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Dependency layers</option></select></label>
+<label>EXECUTION <select id="engine"><option value="fast" selected>Fast GPU-resident BFS</option><option value="legacy">Legacy full-wire comparison</option></select></label>
+<label>LEGACY GPU COMPILER <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Dependency layers</option></select></label>
 <button id="pause">PAUSE</button><button id="step">STEP →</button><button id="restart" class="action">NEW MAZE ↗</button></div>
 <section class="panes">
 <div class="panel"><header><span>01 / CONVENTIONAL SEARCH</span><b>CPU BFS</b></header><canvas id="cpu"></canvas><footer id="cpu-info">Waiting for search</footer></div>
-<div class="panel gpu"><header><span>02 / HANDWIRED SEARCH</span><b>Neural WebGPU</b></header><canvas id="gpu"></canvas><footer id="gpu-info">Waiting for search</footer></div>
+<div class="panel gpu"><header><span>02 / HANDWIRED SEARCH</span><b>Neural WebGPU</b></header><canvas id="gpu"></canvas><canvas id="gpu-fast"></canvas><footer id="gpu-info">Waiting for search</footer></div>
 </section>
 <section class="metrics">
 <div><label>EXPANSION DEPTH</label><strong id="depth">0</strong></div>
 <div><label>CELLS EXPLORED</label><strong id="explored">1</strong></div>
-<div><label>ORACLE WIRES CHECKED</label><strong id="wires">0</strong></div>
+<div><label>STATE VALUES CHECKED</label><strong id="wires">0</strong></div>
 <div><label>GPU MISMATCHES</label><strong id="errors">0</strong></div>
 <div><label>PATH LENGTH</label><strong id="path">—</strong></div>
 </section>
 <p id="status" class="status">Initializing GPU search engine…</p>
-<section class="disclosure"><p><strong>What's computed on the GPU?</strong> Each grid cell evaluates a fixed Handwired circuit for frontier detection, wall gating, visited-state exclusion and next-state propagation. Host code gathers neighboring frontier cells and reconstructs the final shortest path. This is neural circuit execution of BFS expansion, not a trained pathfinding model or a fully GPU-resident graph algorithm.</p></section>
+<section class="disclosure"><p><strong>What's computed on the GPU?</strong> Each grid cell evaluates a fixed Handwired circuit for frontier detection, wall gating, visited-state exclusion and next-state propagation. Fast mode gathers four-neighbor frontiers and executes the actual Handwired BFS circuit on GPU-resident state, with direct WebGPU rendering and a single final state readback for exact CPU-reference verification and shortest-path reconstruction. Legacy mode preserves the full-wire circuit comparison with host gathering and per-step GPU readback.</p></section>
 </main><pre id="smoke" hidden></pre><script type="module" src="./demo.ts"></script></body></html>
