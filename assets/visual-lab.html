@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080c1b">
+<meta name="description" content="Four interactive open-source GPU research experiments: neural swarm, maze, cloth and fluid. Handwired circuits vs independent CPU references.">
+<title>Handwired Visual Lab | Four algorithms. Zero training.</title>
+<link rel="stylesheet" href="./visual-lab.css"></head>
+<body>
+<div class="frame">
+  <header class="mast">
+    <a href="../" class="logo" aria-label="Handwired home"><span class="wiremark">✳</span> HANDWIRED <span class="subbrand">/ VISUAL LAB</span></a>
+    <nav><a href="../">Original demos</a><a href="https://github.com/Chrisbryan17/handwired">GitHub ↗</a></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow"><span class="dot"></span> FOUR COMPUTATIONAL EXPERIMENTS <span class="slash">/</span> WEBGPU</div>
+      <h1>Algorithms that<br><em>come alive.</em></h1>
+      <p>What if you could watch an algorithm run as a fixed neural computation graph? Four simulations. Real GPU execution. Independent CPU oracles. No training required.</p>
+      <div class="intro-bottom"><a class="call" href="../neural-fluid/">Enter the lab <span aria-hidden="true">↗</span></a><span class="inline-meta">FP32 CIRCUITS &nbsp;·&nbsp; SOURCE AVAILABLE &nbsp;·&nbsp; BROWSER-BASED</span></div>
+    </section>
+    <section class="works" aria-label="Interactive GPU experiments">
+      <div class="section-head"><div><span class="eyebrow">THE EXPERIMENTS</span><h2>Pick your world.</h2></div><span class="quiet">Four different ways to turn computation into motion</span></div>
+      <div class="gallery">
+        <a href="../neural-swarm/" class="item teal"><div class="preview"><img loading="lazy" src="../lab/visual-swarm/results/2026-10-17-dell-webgpu-qa.png" alt="Real browser screenshot of the three-color flocking simulation shown on the CPU and GPU"></div><div class="meta"><span>01 / AGENT DYNAMICS</span><span>GPU-VERIFIED</span></div><div class="item-foot"><div><h3>Neural Swarm</h3><p>Boids that flock, turn and respond to the cursor. Watch emergent organization from fixed rules.</p></div><span class="arrow">↗</span></div></a>
+        <a href="../neural-maze/" class="item violet"><div class="preview"><img loading="lazy" src="../lab/visual-maze/results/2026-10-17-dell-webgpu-qa.png" alt="Real browser screenshot of matching breadth-first search wavefronts expanding through a maze"></div><div class="meta"><span>02 / GRAPH SEARCH</span><span>GPU-VERIFIED</span></div><div class="item-foot"><div><h3>Neural Maze</h3><p>Watch a fixed neural circuit execute breadth-first search and reconstruct a shortest path.</p></div><span class="arrow">↗</span></div></a>
+        <a href="../neural-cloth/" class="item blue"><div class="preview"><img loading="lazy" src="../lab/visual-cloth/results/2026-10-17-dell-webgpu-qa.png" alt="Real browser screenshot of a deforming fabric mesh draped above a sphere"></div><div class="meta"><span>03 / SOFT BODY PHYSICS</span><span>GPU-VERIFIED</span></div><div class="item-foot"><div><h3>Neural Cloth</h3><p>Grab, stretch and tear a mass-spring textile, with Handwired motion and host constraints.</p></div><span class="arrow">↗</span></div></a>
+        <a href="../neural-fluid/" class="item pink"><div class="preview"><img loading="lazy" src="../lab/visual-fluid/results/2026-10-17-dell-webgpu-qa.png" alt="Real browser screenshot of colorful pink and blue simulated fluid on CPU and GPU"></div><div class="meta"><span>04 / NUMERICAL FLUIDS</span><span>GPU-VERIFIED</span></div><div class="item-foot"><div><h3>Neural Fluid</h3><p>Stir luminous dye through a semi-Lagrangian solver with neural advection and pressure projection.</p></div><span class="arrow">↗</span></div></a>
+      </div>
+    </section>
+    <section class="proof">
+      <div class="proof-label"><span class="eyebrow">THE EVIDENCE</span><h2>Not a render.<br>Real computation.</h2></div>
+      <div class="proof-copy"><p>Every experiment ships with a deterministic CPU reference, project-specific tests, a WebGPU circuit execution path, a real browser screenshot and a numeric differential report from Intel UHD Graphics.</p><p>We deliberately distinguish CPU-side neighborhood and constraint work from GPU circuit execution. Hardware agreement on the tested adapter does not imply GPU acceleration for every workload.</p><a href="https://github.com/Chrisbryan17/handwired/tree/feat/visual-lab-release-20261017" class="textlink">Inspect the implementation and evidence ↗</a></div>
+    </section>
+  </main>
+  <footer class="bottom"><span>HANDWIRED VISUAL LAB · 2026</span><span>MIT OPEN SOURCE · NO TRAINING</span><a href="../">Back to Handwired ↗</a></footer>
+</div>
+</body></html>
