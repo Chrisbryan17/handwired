@@ -16,13 +16,13 @@ const stepSelect=document.querySelector<HTMLSelectElement>('#steps')!
 const runButton=document.querySelector<HTMLButtonElement>('#run')!
 const put=(value:string)=>{status.textContent=value}
 const fCircuit=buildFluidCircuit(),cCircuit=buildClothCircuit()
-function median(values:number[]){const s=[...values].sort((a,b)=>a-b);return s[Math.floor(s.length/2)]!}
+function median(values:number[]){const s=[...values].sort((a,b)=>a-b);return s[Math.floor(s.length/2)]}
 function referenceFluid(input:Fluid){
   const sources=fluidAdvectionInputs(input),width=fCircuit.circuit.sourceSize+fCircuit.circuit.operations.length
   const values=new Float32Array(input.width*input.height*width)
   for(let i=0;i<input.width*input.height;i++){
     const out=handwrittenFluidStep(sources.subarray(i*FLUID_SOURCE_SIZE,(i+1)*FLUID_SOURCE_SIZE))
-    for(let c=0;c<5;c++)values[i*width+fCircuit.outputWires[c]!]=out[c]!
+    for(let c=0;c<5;c++)values[i*width+fCircuit.outputWires[c]]=out[c]!
   }
   return projectFluid(input,values,width,fCircuit.outputWires)
 }
@@ -41,7 +41,7 @@ function parity(left:Float32Array,right:Float32Array){
   if(left.length!==right.length)throw new Error('GPU implementations returned different output dimensions')
   let maxError=0,sum=0,nonfinite=0
   for(let i=0;i<left.length;i++){
-    const a=left[i]!,b=right[i]!
+    const a=left[i],b=right[i]
     if(!Number.isFinite(a)||!Number.isFinite(b))nonfinite++
     const delta=Math.abs(a-b);maxError=Math.max(maxError,delta);sum+=delta*delta
   }
