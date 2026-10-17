@@ -2,14 +2,15 @@ import {buildSwarmCircuit, SOURCE_SIZE, STATE_SIZE} from './model.ts'
 
 export type PointerState = {x: number, y: number, mode: 'attract' | 'repel' | 'off'}
 export type SwarmPopulation = {state: Float32Array, species: Uint8Array}
+export const MAX_SWARM_AGENTS = 16_384
 export const NEIGHBOR_RADIUS = 0.11
 const CELL_COUNT = Math.ceil(1 / NEIGHBOR_RADIUS)
 const NEIGHBOR_RADIUS_SQUARED = NEIGHBOR_RADIUS * NEIGHBOR_RADIUS
 
 /** Identical deterministic populations for left and right comparison panes. */
 export function initialPopulation(count: number, seed = 3807): SwarmPopulation {
-  if (!Number.isSafeInteger(count) || count < 1 || count > 8192) {
-    throw new Error('population must contain 1..8192 agents')
+  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_SWARM_AGENTS) {
+    throw new Error('population must contain 1..16,384 agents')
   }
   const state = new Float32Array(count * STATE_SIZE), species = new Uint8Array(count)
   let current = seed >>> 0
