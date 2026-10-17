@@ -12,7 +12,7 @@ export function buildMazeCircuit(){
   const n=c.roundAffine([[c.source(1),1],[c.source(2),1],
     [c.source(3),1],[c.source(4),1]])
   // Inputs are binary, so clamp the 0..4 neighbour count to 0..1.
-  const excess=c.reglu([[n,1]],-1,[],1)
+  const excess=c.reglu([],1,[[n,1]],-1)
   const hasFrontier=c.roundAffine([[n,1],[excess,-1]])
   const reachable=c.multiply(hasFrontier,passable)
   const unseen=c.roundAffine([[visited,-1]],1)
