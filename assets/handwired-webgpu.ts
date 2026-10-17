@@ -435,6 +435,6 @@ if (new URLSearchParams(location.search).has('smoke')) {
     smoke.textContent = JSON.stringify({ok: false, error: String(error)})
     document.body.dataset.status = 'fail'
   })
-} else {
+} else if (!new URLSearchParams(location.search).has('probe')) {
   void compare().catch(error => {status.textContent = String(error); runButton.disabled = false})
 }
