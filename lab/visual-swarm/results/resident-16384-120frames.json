@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "date": "2026-10-17T19:14:18.613Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "swarm fully GPU-resident simulation and instanced WebGPU rendering",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "count": 16384,
+  "frames": 120,
+  "checked": 65536,
+  "nonfinite": 0,
+  "outOfBounds": 0,
+  "moved": 16384,
+  "maxDisplacement": 0.73079821625116,
+  "setupMs": 528.8999999910593,
+  "frameWallMs": 537.5,
+  "msPerFrame": 4.479166666666667,
+  "device": "real WebGPU required",
+  "algorithm": "cell-aggregated approximate Boids with Handwired circuit"
+}
