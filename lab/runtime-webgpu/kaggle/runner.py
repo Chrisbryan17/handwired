@@ -92,11 +92,21 @@ def main():
     execute('chromium-version',[browser,'--version'],60,True)
     # Debian/Ubuntu browser dynamic dependencies may need apt-based bootstrap.
     execute('chromium-libraries',[sys.executable,'-m','playwright','install-deps','chromium'],420,True)
+    # Kaggle's CUDA container may expose nvidia-smi without NVIDIA Vulkan ICD
+    # libraries. Install only the matching major-version GPU userspace package,
+    # never a new kernel driver, in the ephemeral Kaggle container.
+    execute('nvidia-userspace-candidates',
+        ['bash','-lc','apt-cache policy libnvidia-gl-580 libnvidia-gl-580-server vulkan-tools; ls -lah /usr/share/vulkan/icd.d /etc/vulkan/icd.d 2>&1 || true'],45,True)
+    execute('nvidia-vulkan-userspace',['bash','-lc',
+        'export DEBIAN_FRONTEND=noninteractive; if apt-cache show libnvidia-gl-580 >/dev/null 2>&1; then apt-get install -y --no-install-recommends libnvidia-gl-580 vulkan-tools; elif apt-cache show libnvidia-gl-580-server >/dev/null 2>&1; then apt-get install -y --no-install-recommends libnvidia-gl-580-server vulkan-tools; else echo "No NVIDIA 580 Vulkan userspace package available in Kaggle APT sources"; exit 2; fi'],420,True)
+    execute('vulkan-detection',['bash','-lc',
+        'ls -lah /usr/share/vulkan/icd.d /etc/vulkan/icd.d 2>&1; vulkaninfo --summary 2>&1 | head -100'],60,True)
     os.environ['HANDWIRED_GPU_BROWSER']=browser
     # First require the real NVIDIA adapter. Never call a SwiftShader result NVIDIA.
     os.environ.pop('HANDWIRED_GPU_SOFTWARE',None)
     os.environ['HANDWIRED_GPU_VULKAN']='1'
     os.environ['HANDWIRED_EXPECT_GPU_VENDOR']='nvidia'
+    os.environ['HANDWIRED_GPU_EXTRA_FLAGS']='--ignore-gpu-blocklist --disable-vulkan-surface --ozone-platform=x11'
     native=execute('nvidia-webgpu-smoke',
         [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-webgpu-smoke.json')],
         180,True,ROOT)
@@ -108,6 +118,7 @@ def main():
     os.environ['HANDWIRED_GPU_SOFTWARE']='1'
     os.environ.pop('HANDWIRED_GPU_VULKAN',None)
     os.environ.pop('HANDWIRED_EXPECT_GPU_VENDOR',None)
+    os.environ.pop('HANDWIRED_GPU_EXTRA_FLAGS',None)
     soft=execute('software-webgpu-smoke',
         [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'software-webgpu-smoke.json')],
         180,True,ROOT)
