@@ -113,14 +113,23 @@ async function compare() {
   const layeredMs = performance.now() - beganLayered
   const layerCount = layered.layerCount
   layered.destroy()
+  const specializedStartInit = performance.now()
+  const specialized = await createWebGpuEvaluator(circuit,
+    {mode:'gpu',capacity:count,strategy:'specialized'})
+  const specializedInitMs = performance.now()-specializedStartInit
+  const startedSpecialized = performance.now()
+  const specializedValues = await specialized.evaluate(sources,{steps,stateUpdates:state})
+  const specializedMs = performance.now()-startedSpecialized
+  specialized.destroy()
   let mismatches = 0, maxDifference = 0, jsMismatches = 0
   for (let i = 0; i < gpuValues.length; i++) {
     const difference = Math.abs(cpuValues[i]! - gpuValues[i]!)
     const layerDifference = Math.abs(cpuValues[i]! - layeredValues[i]!)
+    const specializedDifference = Math.abs(cpuValues[i]! - specializedValues[i]!)
     const jsDifference = Math.abs(cpuValues[i]! - jsValues[i]!)
     if (jsDifference > 0.00002) jsMismatches++
-    if (difference > 0.00002 || layerDifference > 0.00002) mismatches++
-    maxDifference = Math.max(maxDifference, difference, layerDifference)
+    if (difference > 0.00002 || layerDifference > 0.00002 || specializedDifference > 0.00002) mismatches++
+    maxDifference = Math.max(maxDifference, difference, layerDifference, specializedDifference)
   }
   draw(cpuValues, gpuValues)
   results.textContent = 'Particles: ' + count.toLocaleString()
@@ -128,13 +137,15 @@ async function compare() {
     + ' · Handwritten JS: ' + jsMs.toFixed(2) + ' ms'
     + ' · GPU (including upload + readback): ' + gpuMs.toFixed(2) + ' ms'
     + ' · Layers: ' + layeredMs.toFixed(2) + ' ms (' + layerCount + ' layers)'
+    + ' · Specialized: ' + specializedMs.toFixed(2) + ' ms'
     + ' · Monolithic speedup: ' + (cpuMs / gpuMs).toFixed(2) + '×'
     + ' · GPU mismatches (>2e-5): ' + mismatches
     + ' · JS mismatches: ' + jsMismatches
     + ' · Maximum error: ' + maxDifference.toExponential(2)
   status.textContent = 'Both sides use exactly the same Handwired circuit.'
   smoke.textContent = JSON.stringify({ok: mismatches === 0, samples: count, steps,
-    cpuMs, jsMs, gpuMs, layeredMs, gpuInitMs, layeredInitMs, layerCount, speedup: cpuMs / gpuMs,
+    cpuMs, jsMs, gpuMs, layeredMs, specializedMs, gpuInitMs, layeredInitMs, specializedInitMs,
+    layerCount, speedup: cpuMs / gpuMs,
     layeredSpeedup: cpuMs / layeredMs, mismatches, jsMismatches, maxDifference})
   document.body.dataset.status = mismatches === 0 && jsMismatches === 0 ? 'pass' : 'fail'
   runButton.disabled = false
@@ -225,6 +236,31 @@ async function smokeTest() {
   } finally {
     layerBackend.destroy()
   }
+  // Circuit-specialized WGSL must agree with the original reference and state updates.
+  let specializedMismatches=0, specializedStateMismatches=0
+  const specializedBackend=await createWebGpuEvaluator(test,{mode:'gpu',device,capacity:512,strategy:'specialized'})
+  try{
+    const vals=await specializedBackend.evaluate(data)
+    const width=test.sourceSize+test.operations.length
+    for(let i=0;i<512;i++){
+      const expected=test.evaluateReference(data.subarray(i*5,(i+1)*5))
+      for(let j=0;j<width;j++)if(!Number.isFinite(vals[i*width+j]!) ||
+        Math.abs(vals[i*width+j]!-expected[j]!)>0.00002)specializedMismatches++
+    }
+    specializedBackend.load(data)
+    await specializedBackend.run(5,[{source:0,from:sum}])
+    const valsState=await specializedBackend.readValues()
+    for(let i=0;i<512;i++){
+      const source=data.slice(i*5,(i+1)*5)
+      let expected=test.evaluateReference(source)
+      for(let step=1;step<5;step++){
+        source[0]=expected[sum]!
+        expected=test.evaluateReference(source)
+      }
+      for(let j=0;j<width;j++)if(!Number.isFinite(valsState[i*width+j]!) ||
+        Math.abs(valsState[i*width+j]!-expected[j]!)>0.00002)specializedStateMismatches++
+    }
+  }finally{specializedBackend.destroy()}
   // Integrate with an unmodified, actual HandwiredOS application circuit:
   // 800 operations in 67 dependency layers at the checked-in baseline.
   const {createValueListCircuit} = await import('../src/handwiredos/value-list.ts')
@@ -233,7 +269,7 @@ async function smokeTest() {
   const integratedExpected = integrated.circuit.evaluateReference(integratedSource)
   let integratedMismatches = 0, integratedBitMismatches = 0, integratedMaxError = 0
   let integratedLayerCount = 0
-  for (const strategy of ['monolithic', 'layers'] as const) {
+  for (const strategy of ['monolithic', 'layers', 'specialized'] as const) {
     const realEvaluator = await createWebGpuEvaluator(integrated.circuit, {
       mode: 'gpu', device, capacity: 1, strategy,
     })
@@ -259,7 +295,7 @@ async function smokeTest() {
   const galleryExpected = gallery.circuit.evaluateReference(gallerySource)
   let galleryMismatches = 0, galleryBitMismatches = 0, galleryMaxError = 0
   let galleryLayerCount = 0
-  for (const strategy of ['monolithic', 'layers'] as const) {
+  for (const strategy of ['monolithic', 'layers', 'specialized'] as const) {
     const galleryEvaluator = await createWebGpuEvaluator(gallery.circuit, {
       mode: 'gpu', device, capacity: 1, strategy,
     })
@@ -278,6 +314,61 @@ async function smokeTest() {
       galleryEvaluator.destroy()
     }
   }
+  const startedWarmCache=performance.now()
+  const cachedGallery=await createWebGpuEvaluator(gallery.circuit,{mode:'gpu',device,capacity:1,strategy:'specialized'})
+  const cachedGalleryInitMs=performance.now()-startedWarmCache
+  const galleryCacheHit=cachedGallery.specializedCacheHit
+  try{
+    const cachedResult=await cachedGallery.evaluate(gallerySource)
+    for(let i=0;i<galleryExpected.length;i++){
+      if(!Object.is(cachedResult[i],galleryExpected[i]))galleryMismatches++
+    }
+  }finally{cachedGallery.destroy()}
+  const {createGridStencil}=await import('../src/runtime/webgpu-grid.ts')
+  const weights={center:0.40,left:0.10,right:0.10,up:0.10,down:0.10,
+    upLeft:0.05,upRight:0.05,downLeft:0.05,downRight:0.05}
+  let gridMismatches=0,gridMaxError=0
+  for(const boundary of ['clamp','wrap','zero'] as const){
+    const opts={width:31,height:17,channels:3,boundary,weights}
+    const sample=Float32Array.from({length:31*17*3},(_,i)=>Math.fround(Math.sin(i*0.037)*3))
+    const gridCpu=await createGridStencil({...opts,mode:'cpu'})
+    const gridGpu=await createGridStencil({...opts,mode:'gpu',device})
+    try{
+      gridCpu.load(sample);gridGpu.load(sample)
+      await gridCpu.step(7);await gridGpu.step(7)
+      const a=await gridCpu.read(),b=await gridGpu.read()
+      for(let i=0;i<a.length;i++){
+        const diff=Math.abs(a[i]!-b[i]!)
+        gridMaxError=Math.max(gridMaxError,diff)
+        if(!Number.isFinite(b[i]!)||diff>0.00001)gridMismatches++
+      }
+    }finally{gridCpu.destroy();gridGpu.destroy()}
+  }
+  const {measureFp32Edges}=await import('./webgpu-numeric-probe.ts')
+  const fp32Edges=await measureFp32Edges(device)
+  let fallbackAdapterName:string|null=null
+  let fallbackAdapterMismatches=0
+  try{
+    const fallback=await navigator.gpu?.requestAdapter({forceFallbackAdapter:true})
+    if(fallback){
+      fallbackAdapterName=fallback.info?.description||fallback.info?.vendor||'fallback'
+      const fallbackDevice=await fallback.requestDevice()
+      try{
+        for(const strategy of ['monolithic','layers','specialized'] as const){
+          const backend=await createWebGpuEvaluator(test,
+            {mode:'gpu',device:fallbackDevice,strategy,capacity:512})
+          try{
+            const vals=await backend.evaluate(data),stride=test.sourceSize+test.operations.length
+            for(let i=0;i<512;i++){
+              const ref=test.evaluateReference(data.subarray(i*5,(i+1)*5))
+              for(let j=0;j<stride;j++)if(!Number.isFinite(vals[i*stride+j]!) ||
+                Math.abs(vals[i*stride+j]!-ref[j]!)>0.00002)fallbackAdapterMismatches++
+            }
+          }finally{backend.destroy()}
+        }
+      }finally{fallbackDevice.destroy()}
+    }
+  }catch(error){fallbackAdapterName='unavailable: '+String(error)}
   const doomed = await createWebGpuEvaluator(test, {mode: 'gpu', device, capacity: 512})
   doomed.load(data)
   device.destroy()
@@ -292,7 +383,10 @@ async function smokeTest() {
   }
   const info = {ok: mismatches === 0 && stateMismatches === 0 && layerMismatches === 0
     && layerStateMismatches === 0 && integratedMismatches === 0 && galleryMismatches === 0
-    && deviceLossCaught,
+    && deviceLossCaught && specializedMismatches===0 && specializedStateMismatches===0
+    && gridMismatches===0 && fallbackAdapterMismatches===0 && galleryCacheHit,
+    specializedMismatches,specializedStateMismatches,gridMismatches,gridMaxError,
+    fp32Edges,fallbackAdapterName,fallbackAdapterMismatches,galleryCacheHit,cachedGalleryInitMs,
     deviceLossCaught, galleryOperations: gallery.circuit.operations.length,
     galleryLayerCount, galleryMismatches, galleryBitMismatches, galleryMaxError,
     integratedOperations: integrated.circuit.operations.length,

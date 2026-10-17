@@ -25,6 +25,7 @@ const browserUrl = 'http://127.0.0.1:39081/' + (browserMode === 'smoke' ? '?smok
 async function startBrowser(binary: string) {
   const result = Bun.spawn([
     binary, '--headless=new', '--no-first-run', '--disable-extensions', '--disable-gpu-sandbox',
+    ...(process.env['HANDWIRED_GPU_SOFTWARE'] === '1' ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : []),
     '--enable-unsafe-webgpu', '--enable-webgpu-developer-features',
     '--remote-allow-origins=*',
     '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank',
