@@ -7,7 +7,7 @@
 <label>TOOL <select id="tool"><option value="grab" selected>Grab & drag</option><option value="cut">Cut threads</option></select></label>
 <label>WIND <input id="wind" type="range" min="0" max="3" step=".1" value="1.2"></label>
 <label>PHYSICS ENGINE <select id="engine"><option value="fast" selected>Fast · GPU compute + direct GPU rendering</option><option value="resident">Full GPU · neural integration + springs</option><option value="hybrid">Hybrid · neural integration only</option></select></label>
-<label>GPU STRATEGY <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Layers</option></select></label>
+<label>LEGACY GPU STRATEGY <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Monolithic</option><option value="layers">Layers</option></select></label>
 <button id="pause">PAUSE</button><button id="restart" class="action">RESET FABRIC ↗</button></div>
 <div class="panes">
 <section class="pane"><header><span>01 / REFERENCE</span><b>CPU Cloth</b></header><canvas id="cpu"></canvas><footer id="cpu-info">Preparing solver…</footer></section>
