@@ -36,6 +36,19 @@ const sample = '@group(0) @binding(1) var<storage,read> src:array<f32>;\n' +
 
 const {circuit,outputWires}=buildFluidCircuit()
 const inline = emitInlineCircuitWgsl(circuit,outputWires,'handwiredAdvection')
+const handwrittenAdvection = `
+fn handwiredAdvection(sourceCells:array<f32,22>) -> array<f32,5> {
+  var result:array<f32,5>;
+  let tx=sourceCells[20u];let ty=sourceCells[21u];
+  for(var k=0u;k<5u;k=k+1u){
+    let base=k*4u;
+    let top=sourceCells[base]+(sourceCells[base+1u]-sourceCells[base])*tx;
+    let bottom=sourceCells[base+2u]+(sourceCells[base+3u]-sourceCells[base+2u])*tx;
+    result[k]=top+(bottom-top)*ty;
+  }
+  return result;
+}
+`
 const advectionWGSL = uniform + sample + index + inline + header + `
 let u=fieldAt(x,y,0u);
 let v=fieldAt(x,y,1u);
@@ -105,6 +118,7 @@ for(var k=2u;k<5u;k=k+1u){dst[i*5u+k]=clamp(src[i*5u+k]*0.998,0.0,6.0);}
 }`
 
 export const fluidGpuWgsl = {advectionWGSL,diffusionWGSL,divergenceWGSL,jacobiWGSL,projectWGSL}
+export type FluidAdvectionKernel = 'handwired' | 'handwritten'
 
 export class ResidentFluidGpu {
   readonly width:number
@@ -133,7 +147,7 @@ export class ResidentFluidGpu {
     this.adapterInfo=adapterInfo
     void device.lost.then(reason=>{this.lost=reason.message !== '' ? reason.message : reason.reason})
   }
-  static async create(width:number,height:number,provided?:GPUDevice) {
+  static async create(width:number,height:number,provided?:GPUDevice,kernel:FluidAdvectionKernel='handwired') {
     if(!Number.isInteger(width)||!Number.isInteger(height)||width<8||height<8||
       width*height>65536)throw new Error('invalid resident fluid dimensions')
     const adapter=provided || typeof navigator === 'undefined' ? null : await navigator.gpu.requestAdapter()
@@ -157,7 +171,7 @@ export class ResidentFluidGpu {
       make(scalar,BufferUsage.STORAGE|BufferUsage.COPY_DST),
     ]
     try{
-      const shaders={advect:advectionWGSL,diffuse:diffusionWGSL,
+      const shaders={advect:kernel==='handwired'?advectionWGSL:advectionWGSL.replace(inline,handwrittenAdvection),diffuse:diffusionWGSL,
         divergence:divergenceWGSL,jacobi:jacobiWGSL,project:projectWGSL}
       const pipelines:Record<string,GPUComputePipeline>={}
       for(const [name,source] of Object.entries(shaders)){
