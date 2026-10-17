@@ -27,10 +27,23 @@ async function main(){
       }
     }
     const rms=Math.sqrt(sumSquared/(start.columns*start.rows*2))
-    const report={ok:nonfinite===0&&pinnedErrors===0&&maxError<.14,
+    const midpoint=start.springs[0]!
+    const mx=(values[midpoint.a*4]!+values[midpoint.b*4]!)/2
+    const my=(values[midpoint.a*4+1]!+values[midpoint.b*4+1]!)/2
+    const initialTears=await gpu.readTearMasks()
+    await gpu.step({wind:1.2,cut:true,x:mx,y:my,tearRadius:.045})
+    const newTears=await gpu.readTearMasks()
+    const originalBroken=initialTears.reduce((n,mask)=>n+(mask!==0?1:0),0)
+    const broken=newTears.reduce((n,mask)=>n+(mask!==0?1:0),0)
+    const middle=Math.floor(start.rows/2)*start.columns+Math.floor(start.columns/2)
+    await gpu.step({wind:0,dragged:middle,x:.63,y:.22})
+    const draggedPosition=await gpu.read()
+    const dragError=Math.hypot(draggedPosition[middle*4]!-.63,draggedPosition[middle*4+1]!-.22)
+    const report={ok:nonfinite===0&&pinnedErrors===0&&maxError<.14&&broken>originalBroken&&dragError<1e-6,
       mode:'gpu',frames:8,count:start.columns*start.rows,
       checked:start.columns*start.rows*2,mismatches:nonfinite+pinnedErrors,
-      maxError,rms,pinnedErrors,nonfinite,gpuMs,numericTolerance:.14}
+      maxError,rms,pinnedErrors,nonfinite,gpuMs,numericTolerance:.14,
+      broken,originalBroken,dragError,interactionSteps:2}
     document.querySelector<HTMLElement>('#status')!.textContent=report.ok?
       'GPU-resident cloth execution succeeded.':'GPU-resident cloth comparison failed.'
     document.querySelector<HTMLElement>('#smoke')!.textContent=JSON.stringify(report)
