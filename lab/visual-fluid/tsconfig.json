@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","include":["./*.ts","../../scripts/serve-visual-fluid.ts","../../scripts/verify-visual-fluid-browser.ts"]}
