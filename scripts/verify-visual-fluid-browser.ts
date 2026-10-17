@@ -26,7 +26,7 @@ async function run() {
     try {
       const child = Bun.spawn([candidate, '--headless=new', '--no-first-run',
         '--no-sandbox', '--disable-gpu-sandbox', '--disable-dev-shm-usage',
-        '--enable-unsafe-webgpu', '--enable-webgpu-developer-features',
+        '--enable-unsafe-webgpu', '--enable-webgpu-developer-features', '--window-size=1440,900',
         ...(process.env['HANDWIRED_GPU_VULKAN'] === '1'
           ? ['--use-angle=vulkan', '--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,WebGPU',
             '--use-gl=angle'] : []),
