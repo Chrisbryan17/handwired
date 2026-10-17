@@ -183,7 +183,7 @@ export class ResidentMazeGpu{
      const command=this.device.createCommandEncoder()
      command.copyBufferToBuffer(this.states[this.current],0,staging,0,bytes)
      this.device.queue.submit([command.finish()])
-     await staging.mapAsync(M.READ)
+     await staging.mapAsync(M)
      const result=new Float32Array(staging.getMappedRange().slice(0))
      staging.unmap();return result
    }finally{staging.destroy()}
