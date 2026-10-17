@@ -412,7 +412,8 @@ async function smokeTest() {
     testedSamples: 512, operationKinds: ['affine', 'reglu', 'boolean', 'index']}
   smoke.textContent = JSON.stringify(info)
   document.body.dataset.status = info.ok ? 'pass' : 'fail'
-  if (!info.ok) throw new Error('differential mismatches: ' + mismatches)
+  // Preserve all individual gate results in the browser report when a gate fails.
+  // The verifier already treats dataset.status=fail as a nonzero exit code.
 }
 
 runButton.addEventListener('click', () => {
