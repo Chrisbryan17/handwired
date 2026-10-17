@@ -91,6 +91,17 @@ async function compare() {
   status.textContent = 'Running independent CPU and WebGPU executions...'
   const steps = Number(new URLSearchParams(location.search).get('steps')
     ?? document.querySelector<HTMLSelectElement>('#steps')!.value)
+  // Chrome headless + Vulkan may expose the physical adapter on one request
+  // and return null on a subsequent independent request. Share one device
+  // across the three Handwired strategies and independent GPU baseline.
+  let adapter:GPUAdapter|null=null
+  for(let attempt=0;attempt<6;attempt++){
+    adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'})
+    if(adapter)break
+    await new Promise(resolve=>setTimeout(resolve,200))
+  }
+  if(!adapter)throw new Error('No benchmark WebGPU adapter')
+  const device=await adapter.requestDevice()
   const cpu = await createWebGpuEvaluator(circuit, {mode: 'cpu', capacity: count})
   const beganCpu = performance.now()
   const cpuValues = await cpu.evaluate(sources, {steps, stateUpdates: state})
@@ -102,7 +113,7 @@ async function compare() {
 
   const startedGpuInit = performance.now()
   status.textContent='GPU monolithic: compiling and executing'
-  const gpu = await createWebGpuEvaluator(circuit, {mode: 'gpu', capacity: count})
+  const gpu = await createWebGpuEvaluator(circuit, {mode: 'gpu', device, capacity: count})
   const gpuInitMs = performance.now() - startedGpuInit
   const beganGpu = performance.now()
   const gpuValues = await gpu.evaluate(sources, {steps, stateUpdates: state})
@@ -110,7 +121,7 @@ async function compare() {
   gpu.destroy()
   const startedLayerInit = performance.now()
   status.textContent='GPU dependency layers: compiling and executing'
-  const layered = await createWebGpuEvaluator(circuit, {mode: 'gpu', capacity: count, strategy: 'layers'})
+  const layered = await createWebGpuEvaluator(circuit, {mode: 'gpu', device, capacity: count, strategy: 'layers'})
   const layeredInitMs = performance.now() - startedLayerInit
   const beganLayered = performance.now()
   const layeredValues = await layered.evaluate(sources, {steps, stateUpdates: state})
@@ -120,16 +131,14 @@ async function compare() {
   const specializedStartInit = performance.now()
   status.textContent='GPU specialized: compiling and executing'
   const specialized = await createWebGpuEvaluator(circuit,
-    {mode:'gpu',capacity:count,strategy:'specialized'})
+    {mode:'gpu',device,capacity:count,strategy:'specialized'})
   const specializedInitMs = performance.now()-specializedStartInit
   const startedSpecialized = performance.now()
   const specializedValues = await specialized.evaluate(sources,{steps,stateUpdates:state})
   const specializedMs = performance.now()-startedSpecialized
   specialized.destroy()
   const {HandwrittenSwarmGpu}=await import('../src/runtime/webgpu-handwritten-baseline.ts')
-  const nativeAdapter=await navigator.gpu.requestAdapter()
-  if(!nativeAdapter)throw new Error('WebGPU missing for conventional baseline')
-  const nativeDevice=await nativeAdapter.requestDevice()
+  const nativeDevice=device
   const nativeInitAt=performance.now()
   status.textContent='Independent handwritten WebGPU baseline: compiling and executing'
   const nativeGpu=await HandwrittenSwarmGpu.create(nativeDevice,count)
