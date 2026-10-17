@@ -133,10 +133,20 @@ struct Geometry { @builtin(position) pos:vec4<f32>,@location(0) uv:vec2<f32> }
 struct Dimensions { width:u32,height:u32,pad0:u32,pad1:u32 };
 @group(0) @binding(1) var<uniform> dims:Dimensions;
 @fragment fn fs(@location(0) uv:vec2<f32>)->@location(0) vec4<f32> {
-  let x=min(dims.width-1u,u32(clamp(uv.x,0.0,0.999999)*f32(dims.width)));
-  let y=min(dims.height-1u,u32(clamp(uv.y,0.0,0.999999)*f32(dims.height)));
-  let at=(y*dims.width+x)*5u;
-  let color=vec3<f32>(field[at+2u],field[at+3u],field[at+4u]);
+  let pixel=clamp(uv*vec2<f32>(f32(dims.width),f32(dims.height))-vec2<f32>(0.5),
+    vec2<f32>(0.0),vec2<f32>(f32(dims.width-1u),f32(dims.height-1u)));
+  let x0=u32(floor(pixel.x));let y0=u32(floor(pixel.y));
+  let x1=min(x0+1u,dims.width-1u);let y1=min(y0+1u,dims.height-1u);
+  let dx=pixel.x-f32(x0);let dy=pixel.y-f32(y0);
+  let a=(y0*dims.width+x0)*5u;
+  let b=(y0*dims.width+x1)*5u;
+  let c=(y1*dims.width+x0)*5u;
+  let d=(y1*dims.width+x1)*5u;
+  let top=mix(vec3<f32>(field[a+2u],field[a+3u],field[a+4u]),
+    vec3<f32>(field[b+2u],field[b+3u],field[b+4u]),dx);
+  let bottom=mix(vec3<f32>(field[c+2u],field[c+3u],field[c+4u]),
+    vec3<f32>(field[d+2u],field[d+3u],field[d+4u]),dx);
+  let color=mix(top,bottom,dy);
   let rgb=vec3<f32>(1.0)-exp(-max(color,vec3<f32>(0.0))*1.15);
   let glow=min(1.0,(rgb.x+rgb.y+rgb.z)*0.22);
   return vec4<f32>(vec3<f32>(0.0235,0.0235,0.0863)+
