@@ -99,7 +99,7 @@ async function verify() {
   // This check intentionally distinguishes native NVIDIA GPU execution from
   // SwiftShader/llvmpipe; a CUDA GPU listed by nvidia-smi proves neither.
   const adapterResult = await command('Runtime.evaluate', {
-    expression: '(async()=>{if(!navigator.gpu)return {error:"navigator.gpu unavailable"};const a=await navigator.gpu.requestAdapter();if(!a)return {error:"no GPU adapter"};return {...a.info,isFallbackAdapter:a.isFallbackAdapter??null}})()',
+    expression: '(async()=>{if(!navigator.gpu)return {error:"navigator.gpu unavailable"};const a=await navigator.gpu.requestAdapter();if(!a)return {error:"no GPU adapter"};return {vendor:a.info.vendor,architecture:a.info.architecture,device:a.info.device,description:a.info.description,isFallbackAdapter:a.isFallbackAdapter??null}})()',
     awaitPromise: true, returnByValue: true,
   })
   const adapterInfo = (adapterResult?.['result'] as {value?: Record<string, unknown>} | undefined)?.value
