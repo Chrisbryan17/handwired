@@ -52,8 +52,9 @@ fn executeOperation(base: u32, opIndex: u32) {
     let gate = affine(base, op.gateStart, op.gateCount, op.gateBias);
     value = value * max(0.0, gate);
   } else if (op.kind == 2u) {
-    let shifted = value + 8388609.0;
-    value = shifted - 8388609.0;
+    // For documented boolean inputs in [0,1], thresholding is equivalent to
+    // the reference odd-bias FP32 round, but cannot be optimized away.
+    value = select(0.0, 1.0, value >= 0.5);
   } else if (op.kind == 3u) {
     let position = affine(base, op.gateStart, op.gateCount, op.gateBias);
     if (position != position) {

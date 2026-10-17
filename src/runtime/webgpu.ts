@@ -2,6 +2,7 @@
 // This is an interpreter kernel over serialized operations, not JSON-search-specific code.
 import {type Circuit, invariant, type Wire} from './numeric-ui-core.ts'
 import {circuitWgsl} from './webgpu-shader.ts'
+import {emitSpecializedWgsl} from './webgpu-specialize.ts'
 
 const Usage = {MAP_READ: 1, COPY_SRC: 4, COPY_DST: 8, UNIFORM: 64, STORAGE: 128} as const
 const MapMode = {READ: 1} as const
@@ -9,12 +10,16 @@ const operationStride = 48
 const termStride = 8
 const workgroupSize = 64
 
+type PipelineCache = {source: string, layout: GPUBindGroupLayout, pipeline: GPUComputePipeline}
+const specializedPipelines = new WeakMap<GPUDevice, WeakMap<Circuit, PipelineCache>>()
+
 export type StateUpdate = {source: number, from: Wire}
 export type WebGpuOptions = {
   device?: GPUDevice
   mode?: 'auto' | 'gpu' | 'cpu'
   capacity?: number
-  strategy?: 'monolithic' | 'layers'
+  strategy?: 'monolithic' | 'layers' | 'specialized'
+  numericPolicy?: 'hardware-f32' | 'reference-exact'
 }
 
 type PackedCircuit = {
@@ -79,7 +84,7 @@ export class WebGpuCircuitEvaluator {
   readonly capacity: number
   readonly sourceSize: number
   readonly width: number
-  readonly strategy: 'monolithic' | 'layers'
+  readonly strategy: 'monolithic' | 'layers' | 'specialized'
   readonly layerCount: number
   private readonly layerRanges: {start: number, count: number}[]
   private readonly layerIndices: Uint32Array
@@ -88,6 +93,7 @@ export class WebGpuCircuitEvaluator {
   private disposed = false
   private loss: string | null = null
   fallbackReason: string | null = null
+  specializedCacheHit = false
   private readonly buffers: GPUBuffer[] = []
   private sourceBuffer?: GPUBuffer
   private valueBuffer?: GPUBuffer
@@ -105,7 +111,7 @@ export class WebGpuCircuitEvaluator {
 
   private constructor(private readonly circuit: Circuit,
     private readonly device: GPUDevice | undefined, capacity: number,
-    strategy: 'monolithic' | 'layers') {
+    strategy: 'monolithic' | 'layers' | 'specialized') {
     this.capacity = capacity
     this.strategy = strategy
     const depthMap = new Map<number, number[]>()
@@ -133,13 +139,17 @@ export class WebGpuCircuitEvaluator {
   static async create(circuit: Circuit, options: WebGpuOptions = {}): Promise<WebGpuCircuitEvaluator> {
     const capacity = options.capacity ?? 256
     const strategy = options.strategy ?? 'monolithic'
+    const exact = options.numericPolicy === 'reference-exact'
+    invariant(options.numericPolicy === undefined || options.numericPolicy === 'hardware-f32' || exact,
+      'invalid numerical policy')
+    invariant(!(exact && options.mode === 'gpu'), 'reference-exact semantics require CPU execution')
     invariant(Number.isSafeInteger(capacity) && capacity > 0, 'capacity must be a positive integer')
     const width = circuit.sourceSize + circuit.operations.length
     invariant(width > 0, 'cannot execute an empty circuit')
     invariant(width * capacity <= 0x3fffffff, 'batch exceeds supported buffer size')
-    let device = options.mode === 'cpu' ? undefined : options.device
-    let fallbackReason: string | null = null
-    if (options.mode !== 'cpu' && device === undefined) {
+    let device = (options.mode === 'cpu' || exact) ? undefined : options.device
+    let fallbackReason: string | null = exact ? 'reference-exact semantics require CPU' : null
+    if (options.mode !== 'cpu' && !exact && device === undefined) {
       try {
         const gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined
         const adapter = gpu === undefined ? null : await gpu.requestAdapter()
@@ -204,7 +214,10 @@ export class WebGpuCircuitEvaluator {
     const messages = (await module.getCompilationInfo()).messages.filter(message => message.type === 'error')
     if (messages.length) throw new Error('WGSL compilation failed: ' +
       messages.map(message => message.lineNum + ': ' + message.message).join('; '))
-    const layout = device.createBindGroupLayout({entries: gpuBuffers.map((_, binding) => ({
+    const specializedSource = this.strategy === 'specialized' ? emitSpecializedWgsl(this.circuit) : undefined
+    const cached = specializedSource === undefined ? undefined : specializedPipelines.get(device)?.get(this.circuit)
+    const cacheEntry = cached?.source === specializedSource ? cached : undefined
+    const layout = cacheEntry?.layout ?? device.createBindGroupLayout({entries: gpuBuffers.map((_, binding) => ({
       binding, visibility: 4, // GPUShaderStage.COMPUTE
       buffer: {type: binding === 0 ? 'uniform' : binding <= 2 ? 'storage' : 'read-only-storage'},
     }))})
@@ -212,6 +225,26 @@ export class WebGpuCircuitEvaluator {
     this.executePipeline = await device.createComputePipelineAsync({
       layout: pipelineLayout, compute: {module, entryPoint: 'execute'},
     })
+    if (specializedSource !== undefined) {
+      if (cacheEntry !== undefined) {
+        this.executePipeline = cacheEntry.pipeline
+        this.specializedCacheHit = true
+      } else {
+        const specializedModule = device.createShaderModule({code: specializedSource, label:'Handwired specialized WGSL'})
+        const errors = (await specializedModule.getCompilationInfo()).messages.filter(message=>message.type === 'error')
+        if (errors.length) throw new Error('Specialized WGSL compilation failed: ' +
+          errors.map(message => message.lineNum + ': ' + message.message).join('; '))
+        this.executePipeline = await device.createComputePipelineAsync({
+          layout: pipelineLayout, compute: {module:specializedModule, entryPoint:'executeSpecialized'},
+        })
+        let perDevice = specializedPipelines.get(device)
+        if (perDevice === undefined) {
+          perDevice = new WeakMap()
+          specializedPipelines.set(device,perDevice)
+        }
+        perDevice.set(this.circuit,{source:specializedSource, layout, pipeline:this.executePipeline})
+      }
+    }
     this.advancePipeline = await device.createComputePipelineAsync({
       layout: pipelineLayout, compute: {module, entryPoint: 'advanceState'},
     })
