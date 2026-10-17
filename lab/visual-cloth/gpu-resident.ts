@@ -205,8 +205,8 @@ export class ResidentClothGpu {
       make(64,Usage.UNIFORM|Usage.COPY_DST),
       make(count*16,Usage.STORAGE|Usage.COPY_SRC|Usage.COPY_DST),
       make(count*16,Usage.STORAGE|Usage.COPY_SRC|Usage.COPY_DST),
-      make(count*4,Usage.STORAGE|Usage.COPY_DST),
-      make(count*4,Usage.STORAGE|Usage.COPY_DST),
+      make(count*4,Usage.STORAGE|Usage.COPY_DST|Usage.COPY_SRC),
+      make(count*4,Usage.STORAGE|Usage.COPY_DST|Usage.COPY_SRC),
     ]
     try{
       const codes=[integrateWGSL,constraintWGSL,tearWGSL]
@@ -318,6 +318,20 @@ export class ResidentClothGpu {
       await staging.mapAsync(Mode.READ)
       const values=new Float32Array(staging.getMappedRange().slice(0))
       staging.unmap();return values
+    }finally{staging.destroy()}
+  }
+  async readTearMasks():Promise<Uint32Array>{
+    this.ensure()
+    if(!this.loaded)throw new Error('load cloth before reading tear masks')
+    const size=this.count*4
+    const staging=this.device.createBuffer({size,usage:Usage.COPY_DST|Usage.MAP_READ})
+    try{
+      const encoder=this.device.createCommandEncoder()
+      encoder.copyBufferToBuffer(this.tear[this.tearParity],0,staging,0,size)
+      this.device.queue.submit([encoder.finish()])
+      await staging.mapAsync(Mode.READ)
+      const masks=new Uint32Array(staging.getMappedRange().slice(0))
+      staging.unmap();return masks
     }finally{staging.destroy()}
   }
   destroy(){if(this.disposed)return;this.disposed=true;for(const buffer of this.buffers)buffer.destroy()}
