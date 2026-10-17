@@ -34,3 +34,9 @@ bun scripts/verify-visual-cloth-browser.ts lab/visual-cloth/results/webgpu.json 
 ```
 
 The browser smoke verifier checks real WebGPU adapter identification, eight frames and every CPU/GPU circuit wire. It is not a speed claim. Production cloth computation requires porting the spring gathers and constraints onto GPU kernels and avoiding frame-by-frame readback.
+
+## Verified visual and hardware evidence
+
+![Actual headless Chrome Intel UHD WebGPU demonstration, October 17, 2026](results/2026-10-17-dell-webgpu-qa.png)
+
+[View the machine-readable Intel UHD Graphics WebGPU correctness report](results/2026-10-17-dell-webgpu-qa.json). This captured screenshot is of the real application running eight verification frames, not a generated illustration. The evidence establishes full-wire numerical agreement on the tested hardware only; it is not proof of a performance speedup or of hardware behavior on every adapter.
