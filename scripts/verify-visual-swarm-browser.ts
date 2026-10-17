@@ -16,7 +16,7 @@ const candidates = process.platform === 'win32'
   ? ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']
   : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser']
-if (process.env['HANDWIRED_GPU_BROWSER']) candidates.unshift(process.env['HANDWIRED_GPU_BROWSER'])
+if (process.env['HANDWIRED_GPU_BROWSER'] !== undefined && process.env['HANDWIRED_GPU_BROWSER'] !== '') candidates.unshift(process.env['HANDWIRED_GPU_BROWSER'])
 let browser: ReturnType<typeof Bun.spawn> | undefined
 
 async function run() {
@@ -70,7 +70,7 @@ async function run() {
       resolve=>pending.set(id,resolve))
     socket.send(JSON.stringify({id,method,params}))
     const answer=await result
-    if(answer.error)throw new Error(JSON.stringify(answer.error))
+    if(answer.error !== undefined && answer.error !== null)throw new Error(JSON.stringify(answer.error))
     return answer.result
   }
   try {
@@ -85,9 +85,9 @@ async function run() {
         returnByValue:true,
       })
       const text=(response?.['result'] as {value?: string}|undefined)?.value
-      if (!text) continue
+      if (text === undefined || text === '') continue
       const current=JSON.parse(text) as {smoke?:string,stage?:string}
-      if (current.smoke) {smoke=JSON.parse(current.smoke) as Record<string,unknown>;break}
+      if (current.smoke !== undefined && current.smoke !== '') {smoke=JSON.parse(current.smoke) as Record<string,unknown>;break}
     }
     if (!smoke) throw new Error('Swarm smoke timed out before eight completed frames')
     const answer=await command('Runtime.evaluate',{
