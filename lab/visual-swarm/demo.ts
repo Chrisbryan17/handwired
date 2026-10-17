@@ -27,7 +27,7 @@ let gpuState = cpuState.slice()
 let backend: WebGpuCircuitEvaluator | null = null
 let requestedRestart = true, paused = false, frames = 0, lastTime = performance.now()
 let maxError = 0, mismatches = 0, totalChecked = 0
-let cpuMs = 0, gpuMs = 0
+let cpuMs = 0, gpuMs = 0, gpuCircuitMs = 0
 const pointer: PointerState = {x: 0.5, y: 0.5, mode: 'off'}
 const colors = ['#74ffdc', '#f5ba84', '#a9a3ff']
 const radiance = ['#74ffdc44', '#f5ba8444', '#a9a3ff44']
@@ -136,12 +136,17 @@ async function tick() {
   const startCpu = performance.now()
   cpuState = referenceFrame(cpuState, species, pointer).state
   cpuMs = performance.now() - startCpu
-  const gpuInput = buildSwarmInputs(gpuState, species, pointer)
+  // Measure the full simulation path and GPU execution separately.
+  // Neighborhood aggregation currently runs on the host in BOTH lanes.
   const startGpu = performance.now()
+  const gpuInput = buildSwarmInputs(gpuState, species, pointer)
+  const startCircuit = performance.now()
   const output = await backend!.evaluate(gpuInput)
-  gpuMs = performance.now() - startGpu
-  if (smoke || frames % 5 === 0) compareAgainstCpuOracle(gpuInput, output)
+  gpuCircuitMs = performance.now() - startCircuit
   gpuState = projectState(output, count, width, outputWires)
+  gpuMs = performance.now() - startGpu
+  // Correctness checking is outside the timed simulation path.
+  if (smoke || frames % 5 === 0) compareAgainstCpuOracle(gpuInput, output)
   render(cpuCanvas, cpuContext, cpuState)
   render(gpuCanvas, gpuContext, gpuState)
   frames++
@@ -150,7 +155,7 @@ async function tick() {
     const fps = frames === 0 ? 0 : 1000 / Math.max(1, now - lastTime) * Math.min(6, frames)
     put('fps', fps.toFixed(1))
     put('cpu-ms', cpuMs.toFixed(2) + ' ms/frame')
-    put('gpu-ms', gpuMs.toFixed(2) + ' ms/frame')
+    put('gpu-ms', gpuMs.toFixed(2) + ' ms/frame total (' + gpuCircuitMs.toFixed(2) + ' ms GPU evaluator)')
     put('error', maxError.toExponential(2))
     put('wires', totalChecked.toLocaleString())
     put('mismatches', mismatches.toLocaleString())
@@ -160,7 +165,7 @@ async function tick() {
   if (smoke && frames >= 8) {
     const result = {ok: mismatches === 0 && backend!.mode === 'gpu',
       mode: backend!.mode, frames, count, strategy: strategySelect.value,
-      circuitOperations: circuit.operations.length, totalChecked, mismatches, maxError, cpuMs, gpuMs}
+      circuitOperations: circuit.operations.length, totalChecked, mismatches, maxError, cpuMs, gpuMs, gpuCircuitMs}
     document.querySelector<HTMLElement>('#smoke')!.textContent = JSON.stringify(result)
     document.body.dataset.status = result.ok ? 'pass' : 'fail'
     paused = true
