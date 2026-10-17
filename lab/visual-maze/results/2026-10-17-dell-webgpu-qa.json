@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "date": "2026-10-17T15:46:48.588Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "visual-maze WebGPU eight-frame full-wire differential",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "nativeGpu": true,
+  "mode": "gpu",
+  "frames": 8,
+  "count": 1457,
+  "operations": 11,
+  "checked": 198152,
+  "mismatches": 0,
+  "maxError": 0,
+  "cpuMs": 0.09999999403953552,
+  "gpuMs": 17.700000002980232
+}
