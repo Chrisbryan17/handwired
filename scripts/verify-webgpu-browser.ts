@@ -25,7 +25,8 @@ const browserMode = process.argv[3] === 'benchmark' ? 'benchmark' :
   process.argv[3] === 'probe' ? 'probe' : 'smoke'
 const browserUrl = 'http://127.0.0.1:39081/' + (browserMode === 'smoke' ? '?smoke=1' :
   browserMode === 'probe' ? '?probe=1' :
-  process.argv[4] === undefined ? '' : '?steps=' + encodeURIComponent(process.argv[4]))
+  process.argv[4] === undefined ? '' : '?steps=' + encodeURIComponent(process.argv[4]) +
+    (process.argv[5] === undefined ? '' : '&count=' + encodeURIComponent(process.argv[5])))
 
 async function startBrowser(binary: string) {
   const result = Bun.spawn([
@@ -139,15 +140,17 @@ async function verify() {
     socket.close()
     return
   }
+  let lastStage: string | undefined
   for (let attempt = 0; attempt < 360; attempt++) {
     await delay(350)
     const response = await command('Runtime.evaluate', {
-      expression: 'JSON.stringify({status:document.body?.dataset.status, smoke:document.querySelector("#smoke")?.textContent})',
+      expression: 'JSON.stringify({status:document.body?.dataset.status, smoke:document.querySelector("#smoke")?.textContent, stage:document.querySelector("#status")?.textContent})',
       returnByValue: true,
     })
     const textValue = (response?.['result'] as {value?: string} | undefined)?.value
     if (textValue === undefined || textValue.length === 0) continue
-    const info = JSON.parse(textValue) as {status?: string, smoke?: string}
+    const info = JSON.parse(textValue) as {status?: string, smoke?: string, stage?: string}
+    lastStage=info.stage
     if (info.status === 'pass' || info.status === 'fail') {
       const details = JSON.parse(info.smoke ?? '{}') as Record<string, unknown>
       const reportValue = {
@@ -172,7 +175,7 @@ async function verify() {
     }
   }
   socket.close()
-  throw new Error('Browser page did not complete its hardware test')
+  throw new Error('Browser page did not complete its hardware test; last stage: '+lastStage)
 }
 
 try {
