@@ -32,7 +32,7 @@ async function startBrowser(binary: string) {
     binary, '--headless=new', '--no-first-run', '--disable-extensions', '--disable-gpu-sandbox',
     '--no-sandbox', '--disable-dev-shm-usage',
     ...(process.env['HANDWIRED_GPU_VULKAN'] === '1'
-      ? ['--use-angle=vulkan', '--enable-features=Vulkan,DefaultANGLEVulkan,WebGPU', '--use-gl=angle']
+      ? ['--use-angle=vulkan', '--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,WebGPU', '--use-gl=angle']
       : []),
     ...(process.env['HANDWIRED_GPU_SOFTWARE'] === '1' ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : []),
     '--enable-unsafe-webgpu', '--enable-webgpu-developer-features',
@@ -101,7 +101,7 @@ async function verify() {
   // This check intentionally distinguishes native NVIDIA GPU execution from
   // SwiftShader/llvmpipe; a CUDA GPU listed by nvidia-smi proves neither.
   const adapterResult = await command('Runtime.evaluate', {
-    expression: '(async()=>{if(!navigator.gpu)return {error:"navigator.gpu unavailable"};const a=await navigator.gpu.requestAdapter();if(!a)return {error:"no GPU adapter"};return {vendor:a.info.vendor,architecture:a.info.architecture,device:a.info.device,description:a.info.description,isFallbackAdapter:a.isFallbackAdapter??null}})()',
+    expression: '(async()=>{if(!navigator.gpu)return {error:"navigator.gpu unavailable"};let a=null;for(let i=0;i<6;i++){a=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});if(a)break;await new Promise(r=>setTimeout(r,200));}if(!a)return {error:"no GPU adapter"};return {vendor:a.info.vendor,architecture:a.info.architecture,device:a.info.device,description:a.info.description,isFallbackAdapter:a.isFallbackAdapter??null}})()',
     awaitPromise: true, returnByValue: true,
   })
   const adapterInfo = (adapterResult?.['result'] as {value?: Record<string, unknown>} | undefined)?.value
@@ -118,15 +118,21 @@ async function verify() {
     let computeProof: Record<string, unknown> = {}
     try {
       const reply = await command('Runtime.evaluate', {
-        expression: '(async()=>{const a=await navigator.gpu.requestAdapter();const d=await a.requestDevice();const u=GPUBufferUsage;const b=d.createBuffer({size:4,usage:u.STORAGE|u.COPY_SRC});const r=d.createBuffer({size:4,usage:u.COPY_DST|u.MAP_READ});const m=d.createShaderModule({code:"@group(0) @binding(0) var<storage,read_write> out:array<f32>; @compute @workgroup_size(1) fn main(){out[0]=42.0;}"});const p=await d.createComputePipelineAsync({layout:"auto",compute:{module:m,entryPoint:"main"}});const group=d.createBindGroup({layout:p.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:b}}]});const e=d.createCommandEncoder();const pass=e.beginComputePass();pass.setPipeline(p);pass.setBindGroup(0,group);pass.dispatchWorkgroups(1);pass.end();e.copyBufferToBuffer(b,0,r,0,4);d.queue.submit([e.finish()]);await r.mapAsync(GPUMapMode.READ);const v=new Float32Array(r.getMappedRange())[0];r.unmap();d.destroy();return {computed:v,valid:v===42};})()',
+        expression: '(async()=>{const a=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});const proofInfo={vendor:a.info.vendor,architecture:a.info.architecture,device:a.info.device,description:a.info.description};const d=await a.requestDevice();const u=GPUBufferUsage;const b=d.createBuffer({size:4,usage:u.STORAGE|u.COPY_SRC});const r=d.createBuffer({size:4,usage:u.COPY_DST|u.MAP_READ});const m=d.createShaderModule({code:"@group(0) @binding(0) var<storage,read_write> out:array<f32>; @compute @workgroup_size(1) fn main(){out[0]=42.0;}"});const p=await d.createComputePipelineAsync({layout:"auto",compute:{module:m,entryPoint:"main"}});const group=d.createBindGroup({layout:p.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:b}}]});const e=d.createCommandEncoder();const pass=e.beginComputePass();pass.setPipeline(p);pass.setBindGroup(0,group);pass.dispatchWorkgroups(1);pass.end();e.copyBufferToBuffer(b,0,r,0,4);d.queue.submit([e.finish()]);await r.mapAsync(GPUMapMode.READ);const v=new Float32Array(r.getMappedRange())[0];r.unmap();d.destroy();return {computed:v,valid:v===42,adapterInfo:proofInfo};})()',
         awaitPromise: true, returnByValue: true,
       })
       computeProof = (reply?.['result'] as {value?: Record<string, unknown>} | undefined)?.value
         ?? {error:'compute shader result missing'}
     } catch (error) {computeProof={error:String(error)}}
-    const reportValue={browser,test:'native hardware WebGPU compute probe',adapterInfo,
-      nativeGpuProven,suspectedSoftware,expectedVendor:requestedVendor??null,computeProof,
-      ok:nativeGpuProven && computeProof['valid']===true}
+    const proofAdapter = (computeProof['adapterInfo'] as Record<string, unknown>|undefined) ?? adapterInfo
+    const proofLabel=[proofAdapter['vendor'],proofAdapter['architecture'],
+      proofAdapter['device'],proofAdapter['description']].join(' ').toLowerCase()
+    const proofSoftware=/swiftshader|llvmpipe|lavapipe|softpipe|software|subzero/.test(proofLabel)
+    const proofHardware=!proofSoftware && proofLabel.includes(requestedVendor??'nvidia') &&
+      typeof proofAdapter['vendor']==='string' && computeProof['valid']===true
+    const reportValue={browser,test:'native hardware WebGPU compute probe',adapterInfo:proofAdapter,
+      nativeGpuProven:proofHardware,suspectedSoftware:proofSoftware,
+      expectedVendor:requestedVendor??null,computeProof,ok:proofHardware}
     writeFileSync(report,JSON.stringify(reportValue,null,2)+'\n')
     console.log(JSON.stringify(reportValue,null,2))
     if(!reportValue.ok)process.exitCode=1
