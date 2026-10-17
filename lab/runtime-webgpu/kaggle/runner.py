@@ -4,7 +4,8 @@ import json, os, pathlib, platform, shutil, subprocess, sys, time, urllib.reques
 from datetime import datetime, timezone
 OUT=pathlib.Path('/kaggle/working' if pathlib.Path('/kaggle/working').exists() else './kaggle-results')
 OUT.mkdir(parents=True,exist_ok=True)
-ROOT=OUT/'handwired'
+ROOT=(pathlib.Path('/kaggle/temp/handwired') if pathlib.Path('/kaggle/working').exists() else OUT/'handwired')
+ROOT.parent.mkdir(parents=True, exist_ok=True)
 BRANCH='feat/webgpu-kaggle-completion-20261016'
 STATUS={'started':datetime.now(timezone.utc).isoformat(),'platform':platform.platform(),'branch':BRANCH,'stages':[]}
 
@@ -31,7 +32,7 @@ def execute(name,argv,timeout=3600,optional=False,cwd=None):
     return result['exit_code']==0
 
 def install_bun():
-    dest=OUT/'bun'
+    dest=(pathlib.Path('/kaggle/temp/handwired-bun') if pathlib.Path('/kaggle/working').exists() else OUT/'bun')
     dest.mkdir(exist_ok=True)
     zip_path=dest/'bun.zip'
     urllib.request.urlretrieve(
@@ -67,6 +68,7 @@ def main():
           'No Chromium binary; Kaggle CUDA GPU does not imply WebGPU browser access'})
     STATUS['completed']=datetime.now(timezone.utc).isoformat()
     STATUS['mandatory_passed']=all(checks)
+    STATUS['output_only_small_logs']=True
     (OUT/'summary.json').write_text(json.dumps(STATUS,indent=2))
     return 0 if all(checks) else 4
 
