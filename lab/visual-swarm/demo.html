@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b16">
+  <title>Neural Swarm — Handwired Visual Lab</title>
+  <link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="https://github.com/Chrisbryan17/handwired">H<span>✳</span> HANDWIRED</a>
+      <div class="top-meta"><span class="pulse"></span> VISUAL LAB / EXPERIMENT 01</div>
+      <a class="source-link" href="https://github.com/Chrisbryan17/handwired/tree/feat/visual-swarm-20261017/lab/visual-swarm">VIEW SOURCE ↗</a>
+    </nav>
+    <section class="hero">
+      <div class="eyebrow">REYNOLDS BOIDS × FIXED NEURAL COMPUTATION</div>
+      <h1>A flock of algorithms.<br><em>Not trained.</em> Handwired.</h1>
+      <p>Hundreds of independent agents. Emergent motion. The same steering circuit evaluated by a CPU reference and by WebGPU. Move your pointer to bend the flock.</p>
+    </section>
+    <section class="toolbar">
+      <div class="field"><label for="count">AGENTS</label>
+        <select id="count"><option value="256">256</option><option value="512" selected>512</option><option value="1024">1,024</option></select></div>
+      <div class="field"><label for="strategy">GPU COMPILER</label>
+        <select id="strategy"><option value="specialized" selected>Specialized WGSL</option><option value="monolithic">Interpreted</option><option value="layers">Dependency layers</option></select></div>
+      <div class="field"><label for="pointer">POINTER</label>
+        <select id="pointer"><option value="attract" selected>Attract</option><option value="repel">Repel</option><option value="off">Off</option></select></div>
+      <button id="pause" type="button">PAUSE</button>
+      <button id="restart" type="button" class="primary">RESTART ↗</button>
+    </section>
+    <section class="stage">
+      <article class="pane">
+        <div class="pane-head"><span class="index">01 / ORIGINAL</span><h2>CPU Reference</h2><span class="tag">FP32</span></div>
+        <canvas id="cpu" aria-label="Reference CPU flock visualization"></canvas>
+        <div class="pane-foot"><span>Same agent inputs and equations</span><span id="cpu-ms">— ms/frame</span></div>
+      </article>
+      <article class="pane gpu-pane">
+        <div class="pane-head"><span class="index">02 / HANDWIRED</span><h2>Neural Circuit</h2><span id="device" class="tag">INITIALIZING</span></div>
+        <canvas id="gpu" aria-label="Handwired WebGPU flock visualization"></canvas>
+        <div class="pane-foot"><span>Compiled circuit execution</span><span id="gpu-ms">— ms/frame</span></div>
+      </article>
+    </section>
+    <section class="dashboard">
+      <div><span>LIVE FRAME RATE</span><strong id="fps">—</strong><small>frames/s</small></div>
+      <div><span>CIRCUIT OPERATIONS</span><strong id="operations">—</strong><small>per agent</small></div>
+      <div><span>MAX ABS ERROR</span><strong id="error">—</strong><small>vs same-input CPU oracle</small></div>
+      <div><span>CHECKED WIRES</span><strong id="wires">—</strong><small>per frame</small></div>
+      <div><span>GPU DIFFERENCES</span><strong id="mismatches">—</strong><small>threshold 2e−5</small></div>
+    </section>
+    <p id="status" class="status">Initializing neural swarm…</p>
+    <footer>
+      <p><b>What is actually running?</b> A uniform-grid neighborhood search computes cohesion, separation and alignment signals on the CPU. Both execution paths then run the same Handwired FP32 circuit for agent steering and motion. The GPU renderer only draws results; it does not replace the physics computation. Host-side velocity limiting and boundary projection are identical for both paths.</p>
+      <p>Inspired by Craig Reynolds' boids and the open-source <a href="https://github.com/hughsk/boids">hughsk/boids</a> ecosystem. Independent implementation, no training or copied source. Verified GPU support is device-dependent.</p>
+    </footer>
+  </main>
+  <pre id="smoke" hidden aria-hidden="true"></pre>
+  <script type="module" src="./demo.ts"></script>
+</body>
+</html>
