@@ -121,11 +121,25 @@ async function compare() {
   const specializedValues = await specialized.evaluate(sources,{steps,stateUpdates:state})
   const specializedMs = performance.now()-startedSpecialized
   specialized.destroy()
-  let mismatches = 0, maxDifference = 0, jsMismatches = 0
+  const {HandwrittenSwarmGpu}=await import('../src/runtime/webgpu-handwritten-baseline.ts')
+  const nativeAdapter=await navigator.gpu.requestAdapter()
+  if(!nativeAdapter)throw new Error('WebGPU missing for conventional baseline')
+  const nativeDevice=await nativeAdapter.requestDevice()
+  const nativeInitAt=performance.now()
+  const nativeGpu=await HandwrittenSwarmGpu.create(nativeDevice,count)
+  const nativeGpuInitMs=performance.now()-nativeInitAt
+  const nativeStarted=performance.now()
+  const nativeValues=await nativeGpu.evaluate(sources,steps)
+  const nativeGpuMs=performance.now()-nativeStarted
+  nativeGpu.destroy()
+  nativeDevice.destroy()
+  let mismatches = 0, maxDifference = 0, jsMismatches = 0, handwrittenGpuMismatches=0
   for (let i = 0; i < gpuValues.length; i++) {
     const difference = Math.abs(cpuValues[i]! - gpuValues[i]!)
     const layerDifference = Math.abs(cpuValues[i]! - layeredValues[i]!)
     const specializedDifference = Math.abs(cpuValues[i]! - specializedValues[i]!)
+    const handwrittenGpuDifference=Math.abs(cpuValues[i]! - nativeValues[i]!)
+    if(handwrittenGpuDifference>0.00002)handwrittenGpuMismatches++
     const jsDifference = Math.abs(cpuValues[i]! - jsValues[i]!)
     if (jsDifference > 0.00002) jsMismatches++
     if (difference > 0.00002 || layerDifference > 0.00002 || specializedDifference > 0.00002) mismatches++
@@ -138,6 +152,7 @@ async function compare() {
     + ' · GPU (including upload + readback): ' + gpuMs.toFixed(2) + ' ms'
     + ' · Layers: ' + layeredMs.toFixed(2) + ' ms (' + layerCount + ' layers)'
     + ' · Specialized: ' + specializedMs.toFixed(2) + ' ms'
+    + ' · Handwritten GPU: ' + nativeGpuMs.toFixed(2) + ' ms'
     + ' · Monolithic speedup: ' + (cpuMs / gpuMs).toFixed(2) + '×'
     + ' · GPU mismatches (>2e-5): ' + mismatches
     + ' · JS mismatches: ' + jsMismatches
@@ -145,9 +160,10 @@ async function compare() {
   status.textContent = 'Both sides use exactly the same Handwired circuit.'
   smoke.textContent = JSON.stringify({ok: mismatches === 0, samples: count, steps,
     cpuMs, jsMs, gpuMs, layeredMs, specializedMs, gpuInitMs, layeredInitMs, specializedInitMs,
-    layerCount, speedup: cpuMs / gpuMs,
+    layerCount, nativeGpuMs, nativeGpuInitMs, handwrittenGpuMismatches,
+    speedup: cpuMs / gpuMs,
     layeredSpeedup: cpuMs / layeredMs, mismatches, jsMismatches, maxDifference})
-  document.body.dataset.status = mismatches === 0 && jsMismatches === 0 ? 'pass' : 'fail'
+  document.body.dataset.status = mismatches === 0 && jsMismatches === 0 && handwrittenGpuMismatches===0 ? 'pass' : 'fail'
   runButton.disabled = false
 }
 
