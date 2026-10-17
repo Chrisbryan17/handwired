@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","include":["./*.ts","../../scripts/serve-visual-cloth.ts","../../scripts/verify-visual-cloth-browser.ts"]}
