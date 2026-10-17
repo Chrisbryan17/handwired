@@ -15,7 +15,7 @@ const uniform = `
 struct Params {
   width:u32, height:u32, dt:f32, strength:f32,
   mouseX:f32, mouseY:f32, dx:f32, dy:f32,
-  active:u32, phase:f32, p0:u32, p1:u32,
+  pointerActive:u32, phase:f32, p0:u32, p1:u32,
 };
 @group(0) @binding(0) var<uniform> p:Params;
 `
@@ -53,7 +53,7 @@ for(var k=0u;k<5u;k=k+1u){
 sources[20u]=bx-f32(x0);sources[21u]=by-f32(y0);
 let interpolated=handwiredAdvection(sources);
 var impulse=0.0;
-if(p.active==1u){
+if(p.pointerActive==1u){
   let distance=vec2<f32>(f32(x)-p.mouseX*f32(p.width),f32(y)-p.mouseY*f32(p.height));
   impulse=exp(-dot(distance,distance)/9.0)*p.strength;
 }
@@ -185,7 +185,7 @@ export class ResidentFluidGpu {
       for(let parity=0;parity<2;parity++){
         for(let pressureIndex=0;pressureIndex<2;pressureIndex++){
           groups['project'].push(group('project',buffers[1+parity]!,
-            buffers[2-parity],buffers[3+pressureIndex]!))
+            buffers[2-parity],buffers[3+pressureIndex]))
         }
       }
       const label=adapter?JSON.stringify(adapter.info):'user-supplied GPUDevice'
