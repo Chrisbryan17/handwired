@@ -55,6 +55,14 @@ fn rest(d:vec2<i32>)->f32{
 `
 const {circuit,outputWires}=buildClothCircuit()
 const inline=emitInlineCircuitWgsl(circuit,outputWires,'handwiredVerlet')
+const handwrittenVerlet = `
+fn handwiredVerlet(source:array<f32,8>)->array<f32,2>{
+  var result:array<f32,2>;
+  result[0u]=((source[0u]*1.984+source[2u]*-0.984)+source[4u]*0.008)+source[6u]*0.008;
+  result[1u]=((source[1u]*1.984+source[3u]*-0.984)+source[5u]*0.008)+source[7u]*0.008;
+  return result;
+}
+`
 const integrateWGSL=params+`
 @group(0) @binding(1) var<storage,read> src:array<f32>;
 @group(0) @binding(2) var<storage,read_write> dst:array<f32>;
@@ -158,6 +166,7 @@ fn main(@builtin(global_invocation_id) tid:vec3<u32>){
 }`
 
 export const clothGpuWgsl={integrateWGSL,constraintWGSL,tearWGSL}
+export type ClothIntegrationKernel = 'handwired'|'handwritten'
 export class ResidentClothGpu {
   readonly width:number
   readonly height:number
@@ -193,7 +202,7 @@ export class ResidentClothGpu {
     this.tearGroups=groups[2] as [GPUBindGroup,GPUBindGroup]
     void device.lost.then(reason=>{this.lost=reason.message!==''?reason.message:reason.reason})
   }
-  static async create(cloth:Cloth,device?:GPUDevice){
+  static async create(cloth:Cloth,device?:GPUDevice,kernel:ClothIntegrationKernel='handwired'){
     const width=cloth.columns,height=cloth.rows,count=width*height
     if(count>4096||count<9||cloth.state.length!==count*4)throw new Error('invalid resident cloth mesh')
     const adapter=device||typeof navigator==='undefined'?null:await navigator.gpu.requestAdapter()
@@ -209,7 +218,7 @@ export class ResidentClothGpu {
       make(count*4,Usage.STORAGE|Usage.COPY_DST|Usage.COPY_SRC),
     ]
     try{
-      const codes=[integrateWGSL,constraintWGSL,tearWGSL]
+      const codes=[kernel==='handwired'?integrateWGSL:integrateWGSL.replace(inline,handwrittenVerlet),constraintWGSL,tearWGSL]
       const pipelines:GPUComputePipeline[]=[]
       for(let i=0;i<codes.length;i++){
         const shader=gpu.createShaderModule({code:codes[i]!,label:'Handwired resident cloth '+i})
