@@ -15,7 +15,10 @@ const binaries = process.platform === 'win32' ? [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
 ] : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser']
+const preferredBrowser = process.env['HANDWIRED_GPU_BROWSER']
+if (preferredBrowser && !binaries.includes(preferredBrowser)) binaries.unshift(preferredBrowser)
 const port = 49381
+const requestedVendor = process.env['HANDWIRED_EXPECT_GPU_VENDOR']?.toLowerCase()
 let child: ReturnType<typeof Bun.spawn> | undefined
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const browserMode = process.argv[3] === 'benchmark' ? 'benchmark' : 'smoke'
@@ -25,9 +28,14 @@ const browserUrl = 'http://127.0.0.1:39081/' + (browserMode === 'smoke' ? '?smok
 async function startBrowser(binary: string) {
   const result = Bun.spawn([
     binary, '--headless=new', '--no-first-run', '--disable-extensions', '--disable-gpu-sandbox',
+    '--no-sandbox', '--disable-dev-shm-usage',
+    ...(process.env['HANDWIRED_GPU_VULKAN'] === '1'
+      ? ['--use-angle=vulkan', '--enable-features=Vulkan,DefaultANGLEVulkan,WebGPU', '--use-gl=angle']
+      : []),
     ...(process.env['HANDWIRED_GPU_SOFTWARE'] === '1' ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : []),
     '--enable-unsafe-webgpu', '--enable-webgpu-developer-features',
     '--remote-allow-origins=*',
+    ...(process.env['HANDWIRED_GPU_EXTRA_FLAGS']?.split(' ').filter(Boolean) ?? []),
     '--remote-debugging-port=' + port, '--user-data-dir=' + profile, 'about:blank',
   ], {stdout: 'ignore', stderr: 'ignore'})
   for (let attempt = 0; attempt < 45; attempt++) {
@@ -88,6 +96,21 @@ async function verify() {
   await command('Page.enable')
   await command('Runtime.enable')
   await command('Page.navigate', {url: browserUrl})
+  // This check intentionally distinguishes native NVIDIA GPU execution from
+  // SwiftShader/llvmpipe; a CUDA GPU listed by nvidia-smi proves neither.
+  const adapterResult = await command('Runtime.evaluate', {
+    expression: '(async()=>{if(!navigator.gpu)return {error:"navigator.gpu unavailable"};const a=await navigator.gpu.requestAdapter();if(!a)return {error:"no GPU adapter"};return {...a.info,isFallbackAdapter:a.isFallbackAdapter??null}})()',
+    awaitPromise: true, returnByValue: true,
+  })
+  const adapterInfo = (adapterResult?.['result'] as {value?: Record<string, unknown>} | undefined)?.value
+    ?? {error: 'GPU adapter information could not be read'}
+  const adapterLabel = [adapterInfo['vendor'], adapterInfo['architecture'],
+    adapterInfo['device'], adapterInfo['description']].join(' ').toLowerCase()
+  const suspectedSoftware = adapterInfo['isFallbackAdapter'] === true ||
+    /swiftshader|llvmpipe|lavapipe|softpipe|software|subzero|mesa.*cpu/.test(adapterLabel)
+  const expectedVendorPresent = !requestedVendor || adapterLabel.includes(requestedVendor)
+  const nativeGpuProven = !suspectedSoftware && expectedVendorPresent &&
+    !('error' in adapterInfo) && adapterInfo['vendor'] !== undefined
   for (let attempt = 0; attempt < 90; attempt++) {
     await delay(350)
     const response = await command('Runtime.evaluate', {
@@ -102,6 +125,7 @@ async function verify() {
       const reportValue = {
         browser, test: browserMode === 'smoke' ? 'actual WebGPU mixed-operation differential' : 'GPU/CPU visual-swarm benchmark',
         date: new Date().toISOString(), ...details,
+        adapterInfo, suspectedSoftware, expectedVendor: requestedVendor ?? null, nativeGpuProven,
       }
       writeFileSync(report, JSON.stringify(reportValue, null, 2) + '\n')
       if (browserMode === 'benchmark' && process.argv.includes('--screenshot')) {
@@ -113,7 +137,9 @@ async function verify() {
       }
       console.log(JSON.stringify(reportValue, null, 2))
       socket.close()
-      if (info.status !== 'pass') process.exitCode = 1
+      if (info.status !== 'pass' || !expectedVendorPresent || (requestedVendor && !nativeGpuProven)) {
+        process.exitCode = 1
+      }
       return
     }
   }
