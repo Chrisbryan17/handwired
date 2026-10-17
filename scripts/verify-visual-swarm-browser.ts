@@ -111,7 +111,6 @@ async function run() {
       if(typeof base64==='string')
         writeFileSync(report.replace(/\.json$/,'.png'), Buffer.from(base64,'base64'))
     }
-    socket.close()
     return summary
   } finally {socket.close()}
 }
@@ -130,6 +129,9 @@ try {
   process.exitCode=1
 } finally {
   browser?.kill()
-  await server.stop()
   try{rmSync(profile,{recursive:true,force:true})}catch{}
+  // Bun 1.3.6 on Windows can crash during async teardown of an HTML-route server
+  // after the CDP WebSocket closes. Exit explicitly after cleaning up Chrome.
+  void server.stop(true)
 }
+process.exit(process.exitCode ?? 0)
