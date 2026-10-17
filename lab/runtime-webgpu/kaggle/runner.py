@@ -107,9 +107,12 @@ def main():
     os.environ['HANDWIRED_GPU_VULKAN']='1'
     os.environ['HANDWIRED_EXPECT_GPU_VENDOR']='nvidia'
     os.environ['HANDWIRED_GPU_EXTRA_FLAGS']='--ignore-gpu-blocklist --disable-vulkan-surface --ozone-platform=x11'
-    native=execute('nvidia-webgpu-smoke',
-        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-webgpu-smoke.json')],
+    nvidia_probe=execute('nvidia-webgpu-probe',
+        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-webgpu-probe.json'),'probe'],
         180,True,ROOT)
+    native=nvidia_probe and execute('nvidia-webgpu-smoke',
+        [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-webgpu-smoke.json')],
+        240,True,ROOT)
     if native:
         execute('nvidia-webgpu-benchmark',
             [bun,'scripts/verify-webgpu-browser.ts',str(OUT/'nvidia-webgpu-benchmark.json'),'benchmark','128'],
