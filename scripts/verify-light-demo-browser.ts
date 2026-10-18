@@ -82,7 +82,9 @@ async function run(){
   await call('Page.enable');await call('Runtime.enable')
   await call('Emulation.setDeviceMetricsOverride',{width:mobile?390:1440,
     height:mobile?844:900,deviceScaleFactor:mobile?2:1,mobile})
-  await call('Page.navigate',{url:'http://127.0.0.1:39148/'})
+  const deployedUrl='https://chrisbryan17.github.io/handwired/neural-light/'
+  const currentUrl=process.argv.includes('--public')?deployedUrl:'http://127.0.0.1:39148/'
+  await call('Page.navigate',{url:currentUrl})
   const targetSamples=Math.max(36,Math.min(1024,Number(process.argv.find(a=>a.startsWith('--samples='))?.split('=')[1]??'36')))
   if(!Number.isInteger(targetSamples))throw new Error('bad sample target')
   let snapshot:{status:string,samples:number,error:string,bytes:string,pixels:string}|undefined
@@ -111,7 +113,7 @@ async function run(){
    if(typeof data!=='string')throw new Error('CDP did not return a screenshot')
    writeFileSync(report.replace(/\.json$/,'.png'),Buffer.from(data,'base64'))
   }
-  return {ok:valid,date:new Date().toISOString(),browser:executable,
+  return {ok:valid,date:new Date().toISOString(),browser:executable,publicRoute:process.argv.includes('--public')?currentUrl:null,
    viewport:mobile?'390x844-mobile':'1440x900-desktop',
    adapter,hardware,targetSamples,snapshot,meaning:'Real progressive GPU render; no CPU path-tracing parity implied',
    researchBoundaries:'Unaccelerated sphere/plane intersections, no BVH/MIS/denoiser'}
