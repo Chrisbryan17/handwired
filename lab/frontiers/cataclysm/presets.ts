@@ -5,6 +5,8 @@ export type CataclysmPreset='dam-break'|'counter-current'|'droplet'
  * Particle motion is never sampled from baked wave animations.
  */
 export function makeCataclysmPreset(name:CataclysmPreset):SphState{
+ if(!(['dam-break','counter-current','droplet'] as string[]).includes(name))
+  throw new Error('unrecognized real fluid scenario')
  if(name==='dam-break'){
   const state=makeFluidBlock(10,8,8,.48)
   for(let i=0;i<state.positions.length/4;i++){
@@ -27,7 +29,7 @@ export function makeCataclysmPreset(name:CataclysmPreset):SphState{
   }
   return {positions,velocities}
  }
- if(name==='droplet'){
+ {
   const state=makeFluidBlock(10,8,7,.48)
   for(let i=0;i<state.positions.length/4;i++){
    const at=i*4
@@ -35,11 +37,10 @@ export function makeCataclysmPreset(name:CataclysmPreset):SphState{
    state.positions[at+1]=Math.fround(state.positions[at+1]!+3.5)
    state.positions[at+2]=Math.fround(state.positions[at+2]!+.4)
    state.velocities[at]=Math.fround(-.3*state.positions[at+2]!)
-   state.velocities[at+2]=Math.fround(.3*state.positions[at]!)
+   state.velocities[at+2]=Math.fround(.3*state.positions[at])
   }
   return state
  }
- throw new Error('unrecognized real fluid scenario')
 }
 export function cataclysmSettings(gravity:number,stiffness:number,viscosity:number):SphSettings{
  const p:SphSettings={...sphDefaults,gravity:[0,-gravity,0],
