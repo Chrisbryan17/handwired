@@ -129,7 +129,7 @@ async function run(){
       const shot=await cmd('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})
       const base64=shot?.['data']
       if(typeof base64==='string')
-        writeFileSync(report.replace(/\\.json$/,'.png'),Buffer.from(base64,'base64'))
+        writeFileSync(report.replace(/\.json$/,'.png'),Buffer.from(base64,'base64'))
     }
     return summary
   }finally{socket.close()}
