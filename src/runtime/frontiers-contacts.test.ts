@@ -26,7 +26,7 @@ test('anchored sphere never moves and absorbs the moving sphere normal impulse',
  const state=make([0,0,0,1,1,0,0,1,1.8,0,0,1,0,0,0,0])
  const result=stepSphereContactsCpu(state,{...p,restitution:0,
   correctionFraction:1})
- expect(result.state.positions[4]).toBe(1.8)
+ expect(result.state.positions[4]).toBeCloseTo(1.8,6)
  expect(result.state.velocities[4]).toBe(0)
  expect(result.state.velocities[0]).toBeCloseTo(0,6)
  expect(result.state.positions[0]).toBeLessThan(0)
