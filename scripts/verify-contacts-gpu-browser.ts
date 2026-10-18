@@ -51,7 +51,9 @@ async function run(){
     try{
       const child=Bun.spawn([candidate,'--headless=new','--no-first-run','--no-sandbox',
         '--disable-gpu-sandbox','--disable-dev-shm-usage','--enable-unsafe-webgpu',
-        '--enable-webgpu-developer-features','--window-size=1440,900',
+        '--enable-webgpu-developer-features',
+     ...(process.env['HANDWIRED_BROWSER_FLAGS']??'').split(' ').filter(Boolean),
+     '--window-size=1440,900',
         '--remote-allow-origins=*','--disable-extensions',
         '--remote-debugging-port='+port,'--user-data-dir='+profile,'about:blank'],
         {stdout:'ignore',stderr:'ignore'})
