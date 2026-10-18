@@ -346,7 +346,9 @@ export class LightGpuRenderer {
   this.check()
   if(this.sampleIndex>=1_000_000)throw new Error('sample counter limit reached')
   this.writeParams()
-  this.canvas.width=this.width;this.canvas.height=this.height
+  if(this.canvas.width!==this.width||this.canvas.height!==this.height){
+    this.canvas.width=this.width;this.canvas.height=this.height
+  }
   const encoder=this.gpu.device.createCommandEncoder({label:'Handwired progressive path sample'})
   const compute=encoder.beginComputePass()
   compute.setPipeline(this.computePipeline);compute.setBindGroup(0,this.computeBind)

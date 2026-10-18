@@ -83,8 +83,10 @@ async function run(){
   await call('Emulation.setDeviceMetricsOverride',{width:mobile?390:1440,
     height:mobile?844:900,deviceScaleFactor:mobile?2:1,mobile})
   await call('Page.navigate',{url:'http://127.0.0.1:39148/'})
+  const targetSamples=Math.max(36,Math.min(1024,Number(process.argv.find(a=>a.startsWith('--samples='))?.split('=')[1]??'36')))
+  if(!Number.isInteger(targetSamples))throw new Error('bad sample target')
   let snapshot:{status:string,samples:number,error:string,bytes:string,pixels:string}|undefined
-  for(let i=0;i<160;i++){
+  for(let i=0;i<800;i++){
    await delay(250)
    snapshot=await evaluate(`({status:document.querySelector('#gpu-status')?.textContent||'',
    samples:Number(document.querySelector('#spp')?.textContent?.replace(/,/g,'')||0),
@@ -92,9 +94,9 @@ async function run(){
    bytes:document.querySelector('#bytes')?.textContent||'',
    pixels:document.querySelector('#pixels')?.textContent||''})`) as typeof snapshot
    if(snapshot?.error)throw new Error('Demo: '+snapshot.error)
-   if((snapshot?.samples??0)>=36)break
+   if((snapshot?.samples??0)>=targetSamples)break
   }
-  if(!snapshot||snapshot.samples<36)throw new Error('Progressive radiance did not reach 36 samples')
+  if(!snapshot||snapshot.samples<targetSamples)throw new Error('Progressive radiance did not reach '+targetSamples+' samples')
   const adapter=await evaluate(`(async()=>{const a=await navigator.gpu?.requestAdapter({powerPreference:'high-performance'});return a?{vendor:a.info.vendor,architecture:a.info.architecture,device:a.info.device,description:a.info.description,isFallbackAdapter:a.isFallbackAdapter??null}:null})()`) as Record<string,unknown>|null
   const label=adapter?[adapter['vendor'],adapter['architecture'],adapter['device'],adapter['description']].join(' '):''
   const hardware=Boolean(adapter&&adapter['isFallbackAdapter']!==true&&
@@ -111,7 +113,7 @@ async function run(){
   }
   return {ok:valid,date:new Date().toISOString(),browser:executable,
    viewport:mobile?'390x844-mobile':'1440x900-desktop',
-   adapter,hardware,snapshot,meaning:'Real progressive GPU render; no CPU path-tracing parity implied',
+   adapter,hardware,targetSamples,snapshot,meaning:'Real progressive GPU render; no CPU path-tracing parity implied',
    researchBoundaries:'Unaccelerated sphere/plane intersections, no BVH/MIS/denoiser'}
  }finally{ws.close()}
 }
