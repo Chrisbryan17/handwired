@@ -1,6 +1,6 @@
 {
   "id": "chrisbryan17/handwired-frontiers-gpu-contact",
-  "title": "Handwired Frontiers: WebGPU Contact Physics Hardware Gate",
+  "title": "Handwired Frontiers GPU Contact",
   "code_file": "kaggle_gpu_contacts.ipynb",
   "language": "python",
   "kernel_type": "notebook",
