@@ -293,7 +293,7 @@ export class BondedStructureGpu{
   const encoder=this.gpu.device.createCommandEncoder()
   const pass=encoder.beginComputePass({label:'Interactive structural GPU impact'})
   pass.setPipeline(this.impactProgram)
-  pass.setBindGroup(0,this.impactBindings!)
+  pass.setBindGroup(0,this.impactBindings)
   pass.dispatchWorkgroups(1)
   pass.end()
   this.gpu.device.queue.submit([encoder.finish()])
