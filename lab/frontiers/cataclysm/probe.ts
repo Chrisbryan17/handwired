@@ -67,7 +67,7 @@ try{
     maxStateError:stateError,maxDensityError:densityError,
     maxPressureError:pressureError,pressureMaximum:Math.max(...initialField.pressure),
     synchronizedMs,readbackMs,trackedGpuBytes:gpu.gpu.bytesAllocated(),
-    expected:'independent 3D CPU O(N²) SPH with Gaussian-equivalent poly6/spiky/viscosity kernels'})
+    expected:'independent 3D CPU O(N²) SPH with compact-support poly6, spiky and viscosity kernels'})
   }finally{gpu.dispose()}
  }
  if(readout)readout.textContent=JSON.stringify({ok:results.every(x=>x.passes),
