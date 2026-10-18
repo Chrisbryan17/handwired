@@ -166,18 +166,29 @@ export class SpatialGridGpu {
       throw new Error('cannot alter point count without rebuilding grid')
     this.gpu.device.queue.writeBuffer(this.positions,0,points)
   }
-  encodeQuery(encoder:GPUCommandEncoder){
+  /** Rebuild the 3D linked-cell adjacency without an unused neighbor-count pass.
+   * Consumer physics kernels can immediately traverse these GPU-resident buffers
+   * in later compute passes in the same command encoder.
+   */
+  encodeBuild(encoder:GPUCommandEncoder){
     this.ensure()
-    const pass=encoder.beginComputePass({label:'GPU grid reset / scatter / 27-cell radius query'})
+    const pass=encoder.beginComputePass({label:'GPU grid reset and atomic scatter'})
     pass.setBindGroup(0,this.bind)
     pass.setPipeline(this.clear)
     pass.dispatchWorkgroups(Math.ceil(this.cellCount/128))
     pass.setPipeline(this.assign)
     pass.dispatchWorkgroups(Math.ceil(this.pointCount/128))
+    pass.end()
+    this.frame++
+  }
+  /** Rebuild cells and compute the exact Euclidean neighbor counts. */
+  encodeQuery(encoder:GPUCommandEncoder){
+    this.encodeBuild(encoder)
+    const pass=encoder.beginComputePass({label:'GPU 27-cell Euclidean radius count'})
+    pass.setBindGroup(0,this.bind)
     pass.setPipeline(this.query)
     pass.dispatchWorkgroups(Math.ceil(this.pointCount/128))
     pass.end()
-    this.frame++
   }
   queryNow(){
     this.ensure()
