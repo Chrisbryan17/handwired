@@ -139,7 +139,7 @@ export function stepSphCpu(initial:SphState,p:SphSettings=sphDefaults):SphState{
    const coefficient=-massJ*(presI/(rhoI*rhoI)+presJ/(rhoJ*rhoJ))*
      spikyRadialDerivative(r,p.h)/r
    const lap=viscosityLaplacian(r,p.h)
-   for(let k=0;k<3;k++)acc[k]+=coefficient*d[k]!+
+   for(let k=0;k<3;k++)acc[k]=acc[k]!+coefficient*d[k]!+
      p.viscosity*massJ*(initial.velocities[jt+k]!-initial.velocities[at+k]!)*lap/rhoJ
   }
   for(let k=0;k<3;k++){
