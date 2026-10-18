@@ -42,7 +42,7 @@ const executables=process.platform==='win32'
   ? ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']
   : ['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser']
-if(process.env['HANDWIRED_GPU_BROWSER'])executables.unshift(process.env['HANDWIRED_GPU_BROWSER'])
+if(process.env['HANDWIRED_GPU_BROWSER'] !== undefined && process.env['HANDWIRED_GPU_BROWSER'] !== '')executables.unshift(process.env['HANDWIRED_GPU_BROWSER'])
 let browser:ReturnType<typeof Bun.spawn>|undefined
 async function run(){
   let pageTarget:{webSocketDebuggerUrl:string}|undefined
@@ -92,7 +92,7 @@ async function run(){
   const evaluate=async(expression:string)=>{
     const res=await cmd('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})
     const reply=res?.['result'] as {value?:unknown,description?:string}|undefined
-    if(res?.['exceptionDetails'])throw new Error('Browser script: '+JSON.stringify(res['exceptionDetails']))
+    if(res?.['exceptionDetails'] !== undefined)throw new Error('Browser script: '+JSON.stringify(res['exceptionDetails']))
     return reply?.value
   }
   try{

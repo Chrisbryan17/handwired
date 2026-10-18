@@ -14,7 +14,7 @@ const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms))
 const choices=process.platform==='win32'?
  ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']:
  ['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser']
-if(process.env['HANDWIRED_GPU_BROWSER'])choices.unshift(process.env['HANDWIRED_GPU_BROWSER'])
+if(process.env['HANDWIRED_GPU_BROWSER'] !== undefined && process.env['HANDWIRED_GPU_BROWSER'] !== '')choices.unshift(process.env['HANDWIRED_GPU_BROWSER'])
 let browser:ReturnType<typeof Bun.spawn>|undefined
 function cleanup(){
  if(!browser)return
@@ -74,7 +74,7 @@ async function run(){
  }
  const evaluate=async(expression:string)=>{
   const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})
-  if(r?.['exceptionDetails'])throw new Error(JSON.stringify(r['exceptionDetails']))
+  if(r?.['exceptionDetails'] !== undefined)throw new Error(JSON.stringify(r['exceptionDetails']))
   return (r?.['result'] as {value?:unknown}|undefined)?.value
  }
  try{
@@ -93,7 +93,7 @@ async function run(){
    error:document.querySelector('#error')?.hidden?'':document.querySelector('#error')?.textContent||'',
    bytes:document.querySelector('#bytes')?.textContent||'',
    pixels:document.querySelector('#pixels')?.textContent||''})`) as typeof snapshot
-   if(snapshot?.error)throw new Error('Demo: '+snapshot.error)
+   if(snapshot?.error !== undefined && snapshot.error.length > 0)throw new Error('Demo: '+snapshot.error)
    if((snapshot?.samples??0)>=targetSamples)break
   }
   if(!snapshot||snapshot.samples<targetSamples)throw new Error('Progressive radiance did not reach '+targetSamples+' samples')
