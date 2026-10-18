@@ -38,7 +38,8 @@ const SIDES:u32=10u;
    vec3<f32>(0.0,1.0,0.0),abs(direction.y)<.90)));
  let bitangent=cross(direction,tangent);
  let side=vertex/6u,corner=vertex%6u;
- let u=side,up=side+1u;
+ var u=side;
+ let up=side+1u;
  var end=0.0;
  if(corner==1u||corner==3u||corner==4u){end=1.0;}
  if(corner==2u||corner==4u||corner==5u){u=up;}
