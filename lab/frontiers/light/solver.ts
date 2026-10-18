@@ -169,7 +169,7 @@ fn travel(rayInitial:Ray,seed:ptr<function,u32>)->vec3<f32>{
    let cosTheta=min(1.0,-dot(ray.direction,hit.normal));
    let t=refract(ray.direction,hit.normal,eta);
    let totalReflection=dot(t,t)<.01;
-   let direction=select(t,reflect(ray.direction,hit.normal),
+   var direction=select(t,reflect(ray.direction,hit.normal),
       totalReflection||rng(seed)<fresnel(cosTheta,eta));
    direction=normalize(direction);
    ray=Ray(hit.position+direction*(E*3.0),direction);
