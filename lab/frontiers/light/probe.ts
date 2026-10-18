@@ -26,4 +26,4 @@ try{
   if(node)node.textContent=JSON.stringify(summary)
 }catch(error){
   if(node)node.textContent=JSON.stringify({ok:false,error:String(error)})
-}finally{renderer?.dispose()}
+}finally{window.addEventListener('pagehide',()=>renderer?.dispose(),{once:true})}
