@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b17">
+<meta name="description" content="GPU-resident Newtonian N-body simulation with real Handwired-compiled integration.">
+<title>Neural Universe | Handwired Eight Frontiers</title>
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top"><a href="../frontiers/" class="brand"><span class="symbol">✳</span> HANDWIRED <span class="muted">/ EIGHT FRONTIERS</span></a>
+  <div class="chip"><span class="active-dot"></span><span id="device-chip">REQUESTING WEBGPU</span></div>
+  <a class="source" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontier-04-universe/lab/frontiers/universe">SOURCE ↗</a></header>
+  <main class="workspace">
+    <aside class="sidebar">
+      <div class="eyebrow">PROJECT 04 / ASTROPHYSICAL COMPUTE</div>
+      <h1>Neural<br><em>Universe.</em></h1>
+      <p class="lede">A gravitational encounter computed body by body. No procedural orbital animation, no neural training claims.</p>
+      <div class="divider"></div>
+      <label for="population">Bodies <strong id="population-output">256</strong></label>
+      <select id="population">
+        <option value="128">128 · starter</option><option value="256" selected>256 · standard</option>
+        <option value="512">512 · dense</option><option value="1024">1,024 · demanding</option>
+      </select>
+      <label for="gravity">Gravity <strong id="gravity-output">0.55</strong></label>
+      <input id="gravity" type="range" min="0" max="2" step="0.05" value="0.55">
+      <label for="softening">Softening <strong id="softening-output">0.045</strong></label>
+      <input id="softening" type="range" min="0.01" max="0.14" step="0.005" value="0.045">
+      <label for="zoom">Camera distance <strong id="zoom-output">2.70</strong></label>
+      <input id="zoom" type="range" min="1" max="6" step="0.1" value="2.7">
+      <div class="buttonrow">
+        <button id="pause" type="button">Pause</button>
+        <button id="reset" type="button" class="secondary">Restart</button>
+      </div>
+      <button id="verify" type="button" class="verification">Run CPU ↔ GPU numerical comparison</button>
+      <div class="smallnote">Drag to orbit · Scroll to zoom. Comparisons explicitly synchronize and read GPU state; playback does not.</div>
+    </aside>
+    <section class="stage" aria-label="Actual running gravitational simulation">
+      <canvas id="universe" aria-label="GPU-rendered 3D N-body galaxy collision simulation"></canvas>
+      <div class="stage-top"><span class="live"><span class="active-dot"></span> NEWTONIAN N-BODY / LIVE COMPUTE</span><span id="gpu-label">DIRECT O(N²) · FP32</span></div>
+      <div class="stage-bottom"><span>01 / TWO-GALAXY ENCOUNTER</span><span>HANDWIRED CIRCUIT KICK / DRIFT</span></div>
+      <div id="error" role="alert" hidden></div>
+    </section>
+    <aside class="readout" aria-label="Live simulation measurements">
+      <div class="eyebrow">REAL-TIME TELEMETRY</div>
+      <div class="stat"><span>Simulated bodies</span><strong id="bodies">–</strong></div>
+      <div class="stat"><span>Simulated steps</span><strong id="steps">0</strong></div>
+      <div class="stat"><span>Time simulated</span><strong id="time">0.00</strong><small>MODEL UNITS</small></div>
+      <div class="stat"><span>Display cadence</span><strong id="fps">–</strong><small>FRAMES / SEC (NOT GPU KERNEL TIMING)</small></div>
+      <div class="stat"><span>Tracked GPU buffers</span><strong id="memory">–</strong><small>KiB (NOT TOTAL VRAM)</small></div>
+      <div class="readout-info">
+        <div class="eyebrow">GPU IDENTITY</div>
+        <p id="adapter">Awaiting WebGPU adapter.</p>
+        <div class="eyebrow">ORACLE VERIFICATION</div>
+        <p id="verification-result">Run comparison to verify one deterministic gravity step against independent handwritten CPU arithmetic.</p>
+      </div>
+      <a class="docs" href="https://github.com/Chrisbryan17/handwired/blob/feat/frontier-04-universe/docs/frontiers-engineering-ledger.md">VIEW RESEARCH GATES ↗</a>
+    </aside>
+  </main>
+  <footer>UNSOFTENED POINT MASSES ARE NOT ASSUMED. THIS MODEL USES PLUMMER SOFTENING AND FIXED-STEP SYMPLECTIC EULER. <a href="../visual-lab/">ORIGINAL VISUAL LAB ↗</a></footer>
+</div>
+<script type="module" src="./demo.ts"></script>
+</body>
+</html>
