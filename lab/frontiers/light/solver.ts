@@ -106,7 +106,7 @@ fn traceScene(ray:Ray,maxT:f32)->Hit{
  return hit;
 }
 fn nextDirection(normal:vec3<f32>,seed:ptr<function,u32>)->vec3<f32>{
- let r=sqrt(rng(seed)),phi=2.0*PI*rng(seed);
+ let r=sqrt(rng(seed));let phi=2.0*PI*rng(seed);
  let t=normalize(cross(select(vec3<f32>(1.0,0.0,0.0),
    vec3<f32>(0.0,1.0,0.0),abs(normal.y)<.9),normal));
  let b=cross(normal,t);
@@ -117,7 +117,7 @@ fn nextEvent(hit:Hit,seed:ptr<function,u32>)->vec3<f32>{
  let delta=sampled-hit.position;
  let squared=dot(delta,delta);
  if(squared<0.0000001){return vec3<f32>(0.0);}
- let distance=sqrt(squared),wi=delta/distance;
+ let distance=sqrt(squared);let wi=delta/distance;
  let cosN=max(0.0,dot(hit.normal,wi));
  let cosL=max(0.0,wi.y);
  if(cosN<=0.0||cosL<=0.0){return vec3<f32>(0.0);}
