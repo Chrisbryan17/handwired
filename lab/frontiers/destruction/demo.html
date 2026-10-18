@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080f1e">
+<meta name="description" content="Handwired 3D GPU sphere contacts and physically computed impact experiments. Early Neural Destruction research slice; not yet structural fracture.">
+<title>Neural Destruction | Handwired Eight Frontiers</title>
+<link rel="stylesheet" href="./demo.css"></head><body>
+<div class="shell">
+<header class="top">
+<a class="brand" href="../frontiers/"><span class="sigil">✳</span> HANDWIRED <span class="muted">/ EIGHT FRONTIERS</span></a>
+<div class="chip"><span class="led"></span><span id="gpu-status">INITIALIZING HARDWARE</span></div>
+<a class="source" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontiers-gpu-contacts/lab/frontiers/destruction">SOURCE ↗</a>
+</header>
+<main class="workspace">
+<aside class="controls">
+<div class="eyebrow">06 / INTERACTIVE IMPACT PHYSICS</div>
+<h1>Neural<br><em>Destruction.</em></h1>
+<p class="intro">Hundreds of real 3D collision bodies. GPU-resident gravity, local contact searches, friction and impulse transfer. Watch the physics compute, not a pre-scripted collapse.</p>
+<div class="boundary"><b>RESEARCH BOUNDARY</b> Sphere contact laboratory only. No bonded structures, stress tensors, fracture propagation or material-specific failure yet.</div>
+<div class="rule"></div>
+<label for="preset">Physical experiment</label>
+<select id="preset"><option value="impact">Kinetic impact / mass transfer</option>
+<option value="cascade">Gravity cascade / stacked contacts</option>
+<option value="swarm">Converging contact swarm</option></select>
+<label for="gravity">Gravity acceleration <output id="gravity-value">9.8</output></label>
+<input id="gravity" type="range" min="0" max="18" value="9.81" step=".1">
+<label for="restitution">Restitution <output id="restitution-value">0.35</output></label>
+<input id="restitution" type="range" min="0" max="1" value=".35" step=".05">
+<label for="friction">Contact friction <output id="friction-value">0.50</output></label>
+<input id="friction" type="range" min="0" max="1.5" value=".5" step=".05">
+<label for="camera-distance">Camera distance <output id="zoom-value">20.0</output></label>
+<input id="camera-distance" type="range" min="10" max="37" value="20" step=".5">
+<div class="actions"><button id="pause">Pause</button><button id="restart" class="alt">Reset scene</button></div>
+<button id="verify" class="verify">Verify next GPU step vs independent CPU oracle ↗</button>
+<p class="footnote">Drag to orbit the camera. Changing physical parameters starts a new deterministic experiment. Diagnostic readback is manual; simulation and rendering use GPU-resident state.</p>
+</aside>
+<section class="stage">
+<canvas id="scene" width="900" height="620" aria-label="GPU-resident physically simulated 3D sphere impact scene"></canvas>
+<div class="stage-meta top-left"><span class="led"></span> LIVE 3D GPU CONTACT DYNAMICS</div>
+<div class="stage-meta top-right">REAL MESH GEOMETRY / PER-BODY COLLISIONS</div>
+<div class="stage-meta bottom-left">NO SCRIPTED COLLAPSE / NO CPU FRAME READBACK</div>
+<div class="stage-meta bottom-right">UNIFORMS · ATOMIC GRID · JACOBI IMPULSES</div>
+<div id="error" role="alert" hidden></div>
+</section>
+<aside class="telemetry"><div class="eyebrow">LIVE COMPUTATION</div>
+<div class="metric"><span>Simulated bodies</span><strong id="body-count">—</strong><small>INCLUDING ANCHORED COLLIDERS</small></div>
+<div class="metric"><span>Physics steps</span><strong id="step-count">0</strong></div>
+<div class="metric"><span>Screen refresh</span><strong id="fps">—</strong><small>NOT A GPU KERNEL BENCHMARK</small></div>
+<div class="metric"><span>Tracked GPU allocations</span><strong id="memory">—</strong><small>KIB / NOT TOTAL HARDWARE VRAM</small></div>
+<div class="eyebrow lower">WEBGPU ADAPTER</div><p id="adapter">Requesting physical GPU…</p>
+<div class="eyebrow lower">NUMERICAL VERIFICATION</div><p id="verification">Click Verify for an independently computed CPU comparison on the current state.</p>
+<div class="eyebrow lower">COMPUTATION BOUNDARY</div><p>GPU spatial linked cells, semi-implicit prediction, sphere collision response and lit 3D mesh rendering. Training, articulated physics, fracture and finite-element stress are not implemented.</p>
+</aside>
+</main><footer><span>HANDWIRED / MIT OPEN SOURCE / COMPUTATIONAL PHYSICS RESEARCH</span>
+<a href="../frontiers/">EIGHT FRONTIERS GALLERY ↗</a></footer>
+</div><script type="module" src="./demo.ts"></script></body></html>
