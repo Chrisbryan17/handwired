@@ -1,0 +1,1 @@
+{"extends":"../../../tsconfig.json","include":["./*.ts","../universe/model.ts","../universe/solver.ts","../genesis/model.ts","../genesis/solver.ts"]}
