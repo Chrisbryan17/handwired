@@ -1,4 +1,5 @@
 import {spatialGridWgsl} from '../src/runtime/frontiers-spatial-gpu.ts'
+import {makeGpuStressField} from '../lab/frontiers/cataclysm/presets.ts'
 import {sphDensityWgsl,sphIntegrateWgsl} from '../lab/frontiers/cataclysm/solver.ts'
 import {makeFluidBlock,densityPressureCpu,stepSphCpu,sphDefaults,
  type SphState,type SphSettings} from '../lab/frontiers/cataclysm/model.ts'
@@ -29,12 +30,23 @@ const data=experiments.map(({name,state,settings,steps})=>{
   expected:{positions:Array.from(current.positions),velocities:Array.from(current.velocities)},
   expectedMass:initial.positions.filter((_,i)=>i%4===3).reduce((a,b)=>a+b,0)}
 })
+const stress=makeGpuStressField()
+const bigSettings:SphSettings={...sphDefaults,dt:.001,restDensity:25,
+ stiffness:2.5,viscosity:.025}
+const datasets:unknown[]=[...data,{
+ name:'18432-body-32-step-GPU-invariants',steps:32,
+ settings:bigSettings,stressOnly:true,
+ initial:{positions:Array.from(stress.positions),
+   velocities:Array.from(stress.velocities)},
+ expected:null,field:null,
+ expectedMass:stress.positions.length/4,
+}]
 for(const [name,content] of Object.entries({
  'spatial-grid.wgsl':spatialGridWgsl,
  'sph-density.wgsl':sphDensityWgsl,
  'sph-integrate.wgsl':sphIntegrateWgsl,
 }))writeFileSync(dir+'/'+name,content)
-writeFileSync(dir+'/sph-native-reference.json',JSON.stringify({data,
+writeFileSync(dir+'/sph-native-reference.json',JSON.stringify({data:datasets,
  reference:'Independent handwritten CPU O(N²) SPH oracle, FP32 states and FP64 sums',
  tolerances:{positions:.015,velocities:.015,density:.025,pressure:.15}},null,2))
 console.log('Exported actual Handwired/SPH WGSL, 3 cases and independent CPU truth')

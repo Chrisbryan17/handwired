@@ -127,6 +127,29 @@ try:
    dtype=np.float32).copy()
   final_vel=np.frombuffer(device.queue.read_buffer(velocity),
    dtype=np.float32).copy()
+  if entry.get('stressOnly',False):
+   coords=final_pos.reshape(n,4)[:,:3]
+   speed=np.linalg.norm(final_vel.reshape(n,4)[:,:3],axis=1)
+   nonfinite=int(np.count_nonzero(~np.isfinite(final_pos))+
+    np.count_nonzero(~np.isfinite(final_vel))+
+    np.count_nonzero(~np.isfinite(initial_field)))
+   min_box=np.asarray(settings['min'],dtype=np.float32)
+   max_box=np.asarray(settings['max'],dtype=np.float32)
+   boundary_violations=int(np.count_nonzero((coords<min_box-1e-4)|(coords>max_box+1e-4)))
+   mass_error=abs(float(np.sum(final_pos.reshape(n,4)[:,3],dtype=np.float64))-
+    entry['expectedMass'])
+   passed=nonfinite==0 and mass_error<=1e-5 and boundary_violations==0 and (
+    float(np.max(speed))<250)
+   stress={'name':entry['name'],'particles':n,'steps':entry['steps'],
+    'mode':'physical GPU conservation/stability stress; not CPU all-pairs equivalence',
+    'nonfinite':nonfinite,'boundaryViolations':boundary_violations,
+    'massError':mass_error,'peakSpeed':float(np.max(speed)),
+    'pressureMaximumInitial':float(np.max(initial_field[:,1])),
+    'elapsedWithExplicitDiagnosticReadbacksMs':round(
+     (time.perf_counter()-started)*1000,3),'ok':passed}
+   report['cases'].append(stress)
+   print('SPH NATIVE GPU STRESS',json.dumps(stress),flush=True)
+   continue
   target=entry['expected']
   oracle_pos=np.asarray(target['positions'],dtype=np.float32)
   oracle_vel=np.asarray(target['velocities'],dtype=np.float32)
@@ -151,7 +174,7 @@ try:
        round((time.perf_counter()-started)*1000,3)}
   report['cases'].append(entry_report)
   print('SPH NATIVE',json.dumps(entry_report),flush=True)
- report['ok']=len(report['cases'])==3 and all(c['ok'] for c in report['cases'])
+ report['ok']=len(report['cases'])==4 and all(c['ok'] for c in report['cases'])
  report['tolerances']=tolerances
  report['scientificLimits']='WCSPH bonded to GPU grid; not coastal tsunami CFD or free-surface reconstruction'
 except Exception as error:
