@@ -18,7 +18,6 @@ export class ContactSceneRenderer{
  readonly solver:SphereContactGpu
  readonly canvas:HTMLCanvasElement
  private readonly context:GPUCanvasContext
- private readonly color:GPUBuffer
  private readonly camera:GPUBuffer
  private readonly pipeline:GPURenderPipeline
  private readonly bind:GPUBindGroup
@@ -29,10 +28,10 @@ export class ContactSceneRenderer{
  target:[number,number,number]=[0,0,0]
  private disposed=false
  private constructor(solver:SphereContactGpu,canvas:HTMLCanvasElement,
-   context:GPUCanvasContext,color:GPUBuffer,camera:GPUBuffer,
+   context:GPUCanvasContext,camera:GPUBuffer,
    pipeline:GPURenderPipeline,bind:GPUBindGroup){
    this.solver=solver;this.canvas=canvas;this.context=context
-   this.color=color;this.camera=camera;this.pipeline=pipeline;this.bind=bind
+   this.camera=camera;this.pipeline=pipeline;this.bind=bind
  }
  static async create(solver:SphereContactGpu,canvas:HTMLCanvasElement,
    initial:SphereBodies):Promise<ContactSceneRenderer>{
@@ -66,7 +65,7 @@ export class ContactSceneRenderer{
        {binding:1,resource:{buffer:color}},
        {binding:2,resource:{buffer:camera}},
      ]})
-     return new ContactSceneRenderer(solver,canvas,context,color,camera,pipeline,bind)
+     return new ContactSceneRenderer(solver,canvas,context,camera,pipeline,bind)
    }catch(error){context.unconfigure();throw error}
  }
  private updateCamera(){
