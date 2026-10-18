@@ -1,6 +1,6 @@
 import {SphereContactGpu} from '../../../src/runtime/frontiers-contacts-gpu.ts'
 import {stepSphereContactsCpu,rigidBodyDiagnostics,
- type SphereContactSettings,type SphereBodies} from '../../../src/runtime/frontiers-contacts.ts'
+ type SphereContactSettings} from '../../../src/runtime/frontiers-contacts.ts'
 import {makeImpactScenario,impactSpatialGrid,impactDefaults,
  type ImpactPreset} from './model.ts'
 import {ContactSceneRenderer} from './renderer.ts'
