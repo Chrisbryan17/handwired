@@ -93,7 +93,7 @@ export async function benchmarkGenesis(side:number,steps:number):Promise<Frontie
     const numerical=compare(reference.state,calculated.state)
     if(numerical.invalidCount>0)throw new Error('nonfinite GPU chemical state')
     return {solver:'grayscott-9point',workload:side*side,steps,
-      adapter:gpu.gpu.adapter.name,compilationAndInitializationMs,cpuReferenceMs,
+      adapter:gpu.gpu.adapter.name,compilationAndInitializationMs,cpuReferenceMs,cpuOptimizedMs,
       gpuSynchronizedComputationMs,gpuFinalReadbackMs,
       gpuMemoryTrackedBytes:gpu.gpu.bytesAllocated(),
       calculatedCpuOverGpuRatio:cpuOptimizedMs/gpuSynchronizedComputationMs,numerical,
