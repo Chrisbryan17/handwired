@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "date": "2026-10-18T05:00:13.576Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "viewport": "1440x900-desktop",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "hardware": true,
+  "targetSamples": 192,
+  "snapshot": {
+    "status": "GPU PATH TRACING ACTIVE",
+    "samples": 200,
+    "error": "",
+    "bytes": "675.0",
+    "pixels": "43,200"
+  },
+  "meaning": "Real progressive GPU render; no CPU path-tracing parity implied",
+  "researchBoundaries": "Unaccelerated sphere/plane intersections, no BVH/MIS/denoiser"
+}
