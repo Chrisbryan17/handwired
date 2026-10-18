@@ -1,3 +1,22 @@
+
+/** Kill the entire ephemeral Chromium process tree on Windows.
+ * Killing only the spawned root leaves GPU, renderer and crashpad child processes
+ * alive across test runs, eventually exhausting the host's OS thread capacity.
+ */
+function terminateHeadlessBrowser(child: ReturnType<typeof Bun.spawn> | undefined): void {
+  if (child === undefined) return
+  if (process.platform !== 'win32') {child.kill(); return}
+  try {
+    const taskkill = Bun.spawnSync(
+      ['taskkill.exe', '/T', '/F', '/PID', String(child.pid)],
+      {stdout:'ignore',stderr:'ignore'},
+    )
+    if (taskkill.exitCode !== 0) child.kill()
+  } catch {
+    child.kill()
+  }
+}
+
 // Headless, hardware-backed smoke and visual QA for the neural fluid experiment.
 // Usage: bun scripts/verify-visual-fluid-browser.ts [report.json] [count] [--screenshot]
 // Unlike CPU tests, this requires actual browser WebGPU and rejects a CPU fallback.
@@ -44,7 +63,7 @@ async function run() {
         } catch {}
       }
       if (target) break
-      child.kill()
+      terminateHeadlessBrowser(child)
     } catch {}
   }
   if (!target) throw new Error('Chrome/Edge DevTools could not start')
@@ -129,7 +148,7 @@ try {
   console.error(result)
   process.exitCode=1
 } finally {
-  browser?.kill()
+  terminateHeadlessBrowser(browser)
   try{rmSync(profile,{recursive:true,force:true})}catch{}
   // Bun 1.3.6 on Windows can crash during async teardown of an HTML-route server
   // after the CDP WebSocket closes. Exit explicitly after cleaning up Chrome.

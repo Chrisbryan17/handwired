@@ -1,3 +1,22 @@
+
+/** Kill the entire ephemeral Chromium process tree on Windows.
+ * Killing only the spawned root leaves GPU, renderer and crashpad child processes
+ * alive across test runs, eventually exhausting the host's OS thread capacity.
+ */
+function terminateHeadlessBrowser(child: ReturnType<typeof Bun.spawn> | undefined): void {
+  if (child === undefined) return
+  if (process.platform !== 'win32') {child.kill(); return}
+  try {
+    const taskkill = Bun.spawnSync(
+      ['taskkill.exe', '/T', '/F', '/PID', String(child.pid)],
+      {stdout:'ignore',stderr:'ignore'},
+    )
+    if (taskkill.exitCode !== 0) child.kill()
+  } catch {
+    child.kill()
+  }
+}
+
 // Real Chromium WebGPU smoke, independent CPU oracle comparison and screenshot.
 // Rejects software GPU identity and never substitutes compilation for execution.
 import page from '../lab/frontiers/universe/demo.html'
@@ -37,7 +56,7 @@ async function run(){
         }catch{}
       }
       if(pageTarget)break
-      child.kill()
+      terminateHeadlessBrowser(child)
     }catch{}
   }
   if(!pageTarget)throw new Error('No CDP-enabled Chromium / Edge browser')
@@ -120,7 +139,7 @@ try{
   console.error(summary)
   process.exitCode=1
 }finally{
-  browser?.kill()
+  terminateHeadlessBrowser(browser)
   try{rmSync(profile,{recursive:true,force:true})}catch{}
   void server.stop(true)
 }
