@@ -1,5 +1,6 @@
 import {SpatialGridGpu} from './frontiers-spatial-gpu.ts'
-import {validateContactSettings,validateSphereBodies,
+import {emitInlineCircuitWgsl} from './webgpu-inline.ts'
+import {buildContactImpulseCircuit,validateContactSettings,validateSphereBodies,
   type SphereBodies,type SphereContactSettings} from './frontiers-contacts.ts'
 import {type SpatialGridConfig} from './frontiers-spatial.ts'
 
@@ -11,6 +12,7 @@ import {type SpatialGridConfig} from './frontiers-spatial.ts'
  * correction on predicted contact positions. No fracture, articulated joints
  * or CCD, and no learned model. All recurrent buffers remain GPU resident.
  */
+const contactKick=buildContactImpulseCircuit()
 export const sphereGpuContactWgsl=`
 struct Parameters {
   origin:vec4<f32>,
@@ -29,6 +31,7 @@ struct Parameters {
 @group(0) @binding(6) var<uniform> parameters:Parameters;
 @group(0) @binding(7) var<storage,read_write> resolvedPositions:array<vec4<f32>>;
 @group(0) @binding(8) var<storage,read_write> resolvedVelocities:array<vec4<f32>>;
+`+emitInlineCircuitWgsl(contactKick.circuit,contactKick.outputWires,'handwiredContactKick')+`
 
 fn coords(p:vec3<f32>)->vec3<i32>{
   return vec3<i32>(floor((p-parameters.origin.xyz)/parameters.bounds.x));
@@ -114,7 +117,19 @@ fn contacts(@builtin(global_invocation_id) tid:vec3<u32>){
                       frictionImpulse=-tangent*(jt/tLen);
                     }
                     let impulse=normalImpulse*normal+frictionImpulse;
-                    dv=dv-invA*impulse;
+                    // The GPU executes Handwired-compiled contact-kick
+                    // multiplication (impulse * signed normal * inverse mass).
+                    // Each axis is accumulated in a circuit output wire.
+                    var kick:array<f32,4>;
+                    kick[2u]=1.0;
+                    kick[3u]=invA;
+                    kick[0u]=dv.x;kick[1u]=-impulse.x;
+                    let vx=handwiredContactKick(kick);
+                    kick[0u]=dv.y;kick[1u]=-impulse.y;
+                    let vy=handwiredContactKick(kick);
+                    kick[0u]=dv.z;kick[1u]=-impulse.z;
+                    let vz=handwiredContactKick(kick);
+                    dv=vec3<f32>(vx[0u],vy[0u],vz[0u]);
                     let correction=max(0.0,penetration-parameters.materials.w)*
                       parameters.materials.z/sumInv;
                     dp=dp-normal*(correction*invA);
@@ -242,7 +257,7 @@ export class SphereContactGpu {
     encoder.copyBufferToBuffer(this.predictedPositions,0,this.grid.positions,0,bytes)
     encoder.copyBufferToBuffer(this.predictedVelocities,0,this.velocities,0,bytes)
     // GPU-resident spatial reset/scatter/query, no CPU synchronization.
-    this.grid.encodeQuery(encoder)
+    this.grid.encodeBuild(encoder)
     pass=encoder.beginComputePass({label:'Contact solver: Jacobi GPU neighbor impulses'})
     pass.setPipeline(this.response);pass.setBindGroup(0,this.binding)
     pass.dispatchWorkgroups(Math.ceil(this.count/128));pass.end()
