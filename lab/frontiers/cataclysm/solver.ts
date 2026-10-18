@@ -253,6 +253,31 @@ export class CataclysmSphGpu {
   this.gpu.device.queue.submit([encoder.finish()])
  }
  async flush(){this.ensure();await this.gpu.device.queue.onSubmittedWorkDone();this.ensure()}
+ /** Diagnostic readback of the *previous* compute step's GPU density and
+  * Handwired-compiled pressure field. Never called during ordinary stepping.
+  */
+ async readDensityPressure():Promise<{density:Float32Array,pressure:Float32Array}>{
+  this.ensure()
+  const device=this.gpu.device
+  const size=this.count*16
+  const stage=device.createBuffer({size,usage:usage.COPY_DST|usage.MAP_READ})
+  try{
+   const encoder=device.createCommandEncoder()
+   encoder.copyBufferToBuffer(this.density,0,stage,0,size)
+   device.queue.submit([encoder.finish()])
+   await stage.mapAsync(1)
+   const packed=new Float32Array(stage.getMappedRange().slice(0))
+   stage.unmap()
+   const density=new Float32Array(this.count)
+   const pressure=new Float32Array(this.count)
+   for(let i=0;i<this.count;i++){
+    density[i]=packed[i*4]!
+    pressure[i]=packed[i*4+1]!
+   }
+   this.ensure()
+   return {density,pressure}
+  }finally{stage.destroy()}
+ }
  async read():Promise<SphState>{
   this.ensure()
   const device=this.gpu.device,size=this.count*16
