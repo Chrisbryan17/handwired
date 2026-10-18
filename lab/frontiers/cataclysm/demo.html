@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071724">
+<meta name="description" content="Neural Cataclysm: physically simulated 3D weakly compressible SPH water with real Handwired-compiled WebGPU compute.">
+<title>Neural Cataclysm | Handwired Eight Frontiers</title>
+<link rel="stylesheet" href="./demo.css"></head><body><div class="shell">
+<header class="top"><a class="brand" href="../frontiers/"><span class="sigil">✳</span> HANDWIRED <span class="muted">/ EIGHT FRONTIERS</span></a>
+<div class="chip"><span class="led"></span><span id="gpu-status">REQUESTING GPU</span></div>
+<a class="source" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontier-02-cataclysm/lab/frontiers/cataclysm">SOURCE ↗</a></header>
+<main class="workspace">
+<aside class="controls">
+<div class="eyebrow">02 / THREE-DIMENSIONAL FLUID MECHANICS</div>
+<h1>Neural<br><em>Cataclysm.</em></h1>
+<p class="intro">Water particles obey 3D hydrodynamic pressure, viscosity and gravity. Density is calculated by real GPU neighborhood searches, not animated surface vertices.</p>
+<div class="boundary"><b>RESEARCH BOUNDARY</b> Weakly compressible SPH particles inside an axis-aligned tank. No tsunami bathymetry, buoyant debris, reconstructed free surface or breakable coastline yet.</div>
+<div class="rule"></div>
+<label for="preset">Hydrodynamic experiment</label><select id="preset">
+<option value="dam-break">Dam break / volume release</option>
+<option value="counter-current">Colliding currents / pressure front</option>
+<option value="droplet">Elevated droplet / gravity fall</option>
+</select>
+<label for="gravity">Downward gravity <output id="gravity-value">9.8</output></label>
+<input id="gravity" type="range" min="0" max="22" value="9.81" step=".1">
+<label for="stiffness">Pressure stiffness <output id="stiffness-value">12</output></label>
+<input id="stiffness" type="range" min="2" max="55" value="12" step="1">
+<label for="viscosity">Dynamic viscosity proxy <output id="viscosity-value">0.12</output></label>
+<input id="viscosity" type="range" min="0" max=".8" value=".12" step=".02">
+<label for="zoom">Orbital camera distance <output id="zoom-value">17.0</output></label>
+<input id="zoom" type="range" min="9" max="34" value="17" step=".5">
+<div class="actions"><button id="pause">Pause</button><button class="alt" id="reset">Reset tank</button></div>
+<button class="verify" id="verify">Verify live GPU timestep against CPU oracle ↗</button>
+<p class="footnote">Drag the viewport to orbit. Camera zoom uses the slider or scroll wheel. Parameter changes restart the deterministic physical experiment. No frame-to-frame CPU particle uploads or readbacks occur during playback.</p>
+</aside>
+<section class="stage"><canvas id="scene" width="900" height="620" aria-label="3D physically simulated SPH water particles"></canvas>
+<div class="stage-meta top-left"><span class="led"></span> REAL SPH PRESSURE / GPU-RESIDENT STATE</div>
+<div class="stage-meta top-right">3D LINKED CELLS / 27-CELL LOCALITY</div>
+<div class="stage-meta bottom-left">NO SCRIPTED WAVES · REAL FLUID COMPUTE</div>
+<div class="stage-meta bottom-right">HYDRODYNAMIC RESEARCH SLICE</div>
+<div id="error" role="alert" hidden></div></section>
+<aside class="telemetry"><div class="eyebrow">COMPUTATIONAL READOUT</div>
+<div class="metric"><span>Fluid particles</span><strong id="particle-count">—</strong></div>
+<div class="metric"><span>GPU simulation steps</span><strong id="step-count">0</strong></div>
+<div class="metric"><span>Simulated time</span><strong id="time-count">0.00</strong><small>MODEL SECONDS</small></div>
+<div class="metric"><span>Screen refresh</span><strong id="fps">—</strong><small>NOT A GPU KERNEL BENCHMARK</small></div>
+<div class="metric"><span>Tracked GPU allocations</span><strong id="memory">—</strong><small>KiB; NOT THE ADAPTER'S VRAM</small></div>
+<div class="eyebrow lower">GPU ADAPTER</div><p id="adapter">Requesting physical adapter…</p>
+<div class="eyebrow lower">INDEPENDENT NUMERICAL ORACLE</div><p id="verification">Compare an actual live GPU update with the all-pairs CPU pressure and viscosity reference.</p>
+<div class="eyebrow lower">SCIENTIFIC LIMIT</div><p>Real SPH equations, approximate weak compressibility and boundary bounces. Displayed spheres are particle markers, not an iso-surface or validated water optics.</p>
+</aside></main>
+<footer><span>HANDWIRED / MIT OPEN-SOURCE NUMERICAL RESEARCH</span><a href="../frontiers/">EIGHT FRONTIERS GALLERY ↗</a></footer>
+</div><script type="module" src="./demo.ts"></script></body></html>
