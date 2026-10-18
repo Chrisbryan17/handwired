@@ -124,7 +124,7 @@ async function run(){
         Number(s['gpuSynchronizedComputationMs'])>0 && numerical?.['invalidCount']===0
     })
     const summary={ok:reportData['ok']===true && hardware && finiteSamples,
-      date:new Date().toISOString(),actualHardwareAdapter:adapter,
+      date:new Date().toISOString(),browser:executable,actualHardwareAdapter:adapter,
       hardware,finiteSamples,liveGpuTimingType:'synchronized wall-clock completion, not timestamp-query kernel-only',
       ...reportData}
     return summary
