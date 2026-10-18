@@ -124,7 +124,7 @@ export function stepBondedCpu(initial:BondedBody,
    (body.velocities[b+1]!-body.velocities[a+1]!)*ny+
    (body.velocities[b+2]!-body.velocities[a+2]!)*nz
   const magnitude=body.bonds[start+1]!*(dist-rest)+body.bonds[start+2]!*rel
-  const aa=i>=0?a/4*3:0,bb=b/4*3
+  const aa=(a/4)*3,bb=(b/4)*3
   forces[aa]=forces[aa]!+magnitude*nx
   forces[aa+1]=forces[aa+1]!+magnitude*ny
   forces[aa+2]=forces[aa+2]!+magnitude*nz

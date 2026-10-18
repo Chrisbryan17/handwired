@@ -11,9 +11,9 @@ function two(distance=2,critical=2):BondedBody{
 }
 test('Hooke axial force matches independent closed-form one-step displacement',()=>{
  const state=two()
- const result=stepBondedCpu(state,{dt:.1,gravity:[0,0,0]})
- expect(result.body.velocities[4]).toBeCloseTo(-1,6)
- expect(result.body.positions[4]).toBeCloseTo(1.9,6)
+ const result=stepBondedCpu(state,{dt:.05,gravity:[0,0,0]})
+ expect(result.body.velocities[4]).toBeCloseTo(-.5,6)
+ expect(result.body.positions[4]).toBeCloseTo(1.975,6)
  expect(result.diagnostics.intact).toBe(1)
 })
 test('critical tensile strain irreversibly fractures spring before force',()=>{
