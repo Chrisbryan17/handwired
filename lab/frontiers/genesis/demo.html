@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070c1b"><meta name="description" content="Handwired real WebGPU morphogen reaction-diffusion laboratory, independent CPU oracle.">
+<title>Neural Genesis | Handwired Eight Frontiers</title><link rel="stylesheet" href="./demo.css"></head><body>
+<div class="frame">
+<header class="nav"><a class="logo" href="../frontiers/">✳ HANDWIRED <span>/ GENESIS</span></a><div class="status"><span class="dot"></span><span id="gpu">ACQUIRING GPU</span></div><a class="repo" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontier-03-genesis/lab/frontiers/genesis">VIEW SOURCE ↗</a></header>
+<main class="layout">
+<section class="controls">
+<p class="overline">03 / MORPHOGENESIS LAB</p><h1>Neural<br><em>Genesis.</em></h1>
+<p class="intro">Watch reaction and diffusion build spatial structures from microscopic rules. Modify the chemistry and repaint the world while every update executes on your GPU.</p>
+<p class="disclaimer">This first slice is deterministic Gray–Scott chemistry, <strong>not</strong> a trained neural cellular automaton or evolution.</p>
+<div class="break"></div>
+<label for="dimensions">Simulation grid <output id="dimensions-value">192 × 192</output></label>
+<select id="dimensions"><option value="96">96 × 96</option><option value="192" selected>192 × 192</option><option value="384">384 × 384</option><option value="512">512 × 512</option></select>
+<label for="presets">Environmental recipe</label>
+<select id="presets"><option value="coral">Coral labyrinth · F .035 / K .062</option><option value="spots">Pearl spots · F .030 / K .062</option><option value="stripes">Branching stripes · F .026 / K .051</option><option value="waves">Wavefront growth · F .022 / K .049</option></select>
+<label for="feed">Feed rate <output id="feed-value">0.035</output></label>
+<input id="feed" type="range" min="0.005" max="0.08" step="0.001" value="0.035">
+<label for="kill">Kill rate <output id="kill-value">0.062</output></label>
+<input id="kill" type="range" min="0.005" max="0.08" step="0.001" value="0.062">
+<label for="speed">Steps per frame <output id="speed-value">1</output></label>
+<input id="speed" type="range" min="1" max="8" step="1" value="1">
+<label for="brush-mode">Touch / pointer brush</label><select id="brush-mode"><option value="1">Inject reagent V</option><option value="2">Erase reagent V</option></select>
+      <label for="palette">Display palette</label><select id="palette"><option value="0">Bioluminescent</option><option value="1">Chromatic tissue</option><option value="2">Concentration probe</option></select>
+<div class="actions"><button id="pause" type="button">Pause</button><button id="reset" type="button" class="ghost">Reset field</button></div>
+<button id="verify" type="button" class="verify">Compare independent CPU ↔ GPU (one step)</button>
+<p class="hint">Drag on the field to paint. Select inject or erase on touch screens; right-click also erases. Change rates mid-simulation.</p>
+</section>
+<section class="sim"><canvas id="field" aria-label="Live GPU reaction diffusion simulation"></canvas>
+<div class="overlay top"><span><span class="dot"></span> LIVE FIELD / COMPUTE + RENDER</span><span>GRID-PERIODIC · FP32</span></div>
+<div class="overlay bottom"><span>REACTIVE MORPHOGEN DYNAMICS</span><span>HANDWIRED KERNEL</span></div>
+<div id="error" role="alert" hidden></div></section>
+<aside class="metrics">
+<p class="overline">COMPUTE TELEMETRY</p>
+<div class="metric"><span>Cells simulated</span><strong id="cells">–</strong></div>
+<div class="metric"><span>Iteration count</span><strong id="steps">0</strong></div>
+<div class="metric"><span>Numerical field size</span><strong id="size">–</strong><small>KiB, 2 CHANNELS × 32 BITS</small></div>
+<div class="metric"><span>Display cadence</span><strong id="fps">–</strong><small>FRAMES / SEC, NOT KERNEL DURATION</small></div>
+<div class="metric"><span>GPU tracked buffers</span><strong id="memory">–</strong><small>KiB, NOT TOTAL VRAM</small></div>
+<div class="readout"><p class="overline">HARDWARE ADAPTER</p><p id="adapter">Waiting for device.</p>
+<p class="overline">INDEPENDENT NUMERICAL ORACLE</p><p id="verification">Run a synchronized numerical check. No readback occurs in the normal drawing loop.</p></div>
+</aside>
+</main><footer>PROGRAMMABLE MORPHOGENESIS · REPRODUCIBLE SEEDS · NOT EVOLUTIONARY TRAINING <a href="../visual-lab/">ORIGINAL VISUAL LAB ↗</a></footer></div>
+<script type="module" src="./demo.ts"></script></body></html>

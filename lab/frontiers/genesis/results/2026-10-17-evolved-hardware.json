@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "date": "2026-10-18T04:19:17.285Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "test": "Genesis 12+ WebGPU chemistry+Handwired steps and one independent CPU chemical parity",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "gpuHardwareIdentified": true,
+  "stepsBeforeVerification": 16,
+  "verification": "PASS · max concentration difference 5.960e-8 / 3.0e-4, invalid 0, mean V 0.00830, cells 36,864 · intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics. One-step agreement does not establish long-running accuracy.",
+  "frameCadenceNotKernelTime": true,
+  "screenshotStep": 1272
+}

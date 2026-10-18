@@ -1,3 +1,32 @@
+
+/** Kill the entire ephemeral Chromium process tree on Windows.
+ * Killing only the spawned root leaves GPU, renderer and crashpad child processes
+ * alive across test runs, eventually exhausting the host's OS thread capacity.
+ */
+function terminateHeadlessBrowser(child: ReturnType<typeof Bun.spawn> | undefined,
+  browserProfile: string): void {
+  if (child === undefined) return
+  if (process.platform !== 'win32') {child.kill(); return}
+  // The root process can exit while its GPU, renderer and crashpad children
+  // remain orphaned. Process-tree termination alone is insufficient.
+  try {
+    Bun.spawnSync(['taskkill.exe', '/T', '/F', '/PID', String(child.pid)],
+      {stdout:'ignore',stderr:'ignore'})
+  } catch {}
+  // Restrict cleanup to this verifier's unique temporary browser profile;
+  // this cannot match the user's normal browsing profile.
+  const escapedProfile = browserProfile.replaceAll("'", "''")
+  const script = "$profile='" + escapedProfile + "';" +
+    'Get-CimInstance Win32_Process -Filter "Name=\'chrome.exe\' OR Name=\'msedge.exe\'" ' +
+    '| Where-Object { $_.CommandLine -like ("*" + $profile + "*") } ' +
+    '| ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }'
+  try {
+    Bun.spawnSync(['powershell.exe', '-NoProfile', '-NonInteractive',
+      '-Command', script], {stdout:'ignore',stderr:'ignore'})
+  } catch {}
+  child.kill()
+}
+
 // Headless, hardware-backed smoke and visual QA for the neural fluid experiment.
 // Usage: bun scripts/verify-visual-fluid-browser.ts [report.json] [count] [--screenshot]
 // Unlike CPU tests, this requires actual browser WebGPU and rejects a CPU fallback.
@@ -44,7 +73,7 @@ async function run() {
         } catch {}
       }
       if (target) break
-      child.kill()
+      terminateHeadlessBrowser(child, profile)
     } catch {}
   }
   if (!target) throw new Error('Chrome/Edge DevTools could not start')
@@ -129,7 +158,7 @@ try {
   console.error(result)
   process.exitCode=1
 } finally {
-  browser?.kill()
+  terminateHeadlessBrowser(browser, profile)
   try{rmSync(profile,{recursive:true,force:true})}catch{}
   // Bun 1.3.6 on Windows can crash during async teardown of an HTML-route server
   // after the CDP WebSocket closes. Exit explicitly after cleaning up Chrome.
