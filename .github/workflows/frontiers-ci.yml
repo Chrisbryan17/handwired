@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/runtime/frontiers-device.ts'
       - 'src/runtime/frontiers-spatial*.ts'
+      - 'src/runtime/frontiers-contacts*.ts'
       - 'lab/frontiers/**'
       - 'assets/frontiers*'
       - 'scripts/demo-site-pages.ts'
@@ -38,7 +39,7 @@ jobs:
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
       - name: Independent model verification
-        run: bun test --timeout 30000 lab/frontiers src/runtime/frontiers-spatial.test.ts
+        run: bun test --timeout 30000 lab/frontiers src/runtime/frontiers-spatial.test.ts src/runtime/frontiers-contacts.test.ts
       - name: Strict numerical and browser TypeScript
         run: |
           if [ -f lab/frontiers/universe/tsconfig.json ]; then
@@ -55,7 +56,7 @@ jobs:
           fi
           bunx tsc -p . --pretty false
       - name: Type-aware lint
-        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts lab/frontiers
+        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts src/runtime/frontiers-contacts.ts src/runtime/frontiers-contacts.test.ts lab/frontiers
       - name: Existing demonstration regression and prefix-safe production build
         run: |
           bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
