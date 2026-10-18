@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "date": "2026-10-18T04:39:04.448Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "publicRoute": "https://chrisbryan17.github.io/handwired/neural-universe/",
+  "viewport": "1440x900-desktop",
+  "test": "Universe 12+ WebGPU force+Handwired steps and one independent CPU parity",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "gpuHardwareIdentified": true,
+  "stepsBeforeVerification": 18,
+  "verification": "PASS · CPU vs actual WebGPU one-step delta: 5.960e-8 (tolerance 2.0e-3), nonfinite: 0. Mass: 1.044; total mechanical energy: -0.3649. Adapter: intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics. Software-adapter rejection is heuristic; this run is not a cross-device hardware certification.",
+  "frameCadenceNotKernelTime": true,
+  "screenshotStep": 280
+}

@@ -1,0 +1,145 @@
+{
+  "ok": true,
+  "date": "2026-10-18T04:38:00.461Z",
+  "actualHardwareAdapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "hardware": true,
+  "finiteSamples": true,
+  "liveGpuTimingType": "synchronized wall-clock completion, not timestamp-query kernel-only",
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-18T04:38:00.213Z",
+  "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+  "metrics": {
+    "gpuTiming": "wall-clock queue submission plus synchronized device completion",
+    "cpuTiming": "independent scalar CPU oracle and data-oriented CPU baseline, matching step counts; stencil precompute is included",
+    "excluded": "pipeline creation, cold shader compilation, initial upload, final readback, rendering",
+    "readback": "separate explicit final staging buffer copy and map",
+    "precision": "WGSL f32 versus JS arithmetic with f32 state storage",
+    "comparability": "ratio uses stronger measured CPU baseline; CPU/GPU order/precision differ, and these are not GPU kernel-only timings",
+    "caveat": "single trial per workload; no error bars; thermals, scheduling and variance unquantified"
+  },
+  "cases": [
+    {
+      "solver": "newtonian-direct-nbody",
+      "workload": 128,
+      "steps": 40,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 432.2999999821186,
+      "cpuReferenceMs": 14.699999988079071,
+      "cpuOptimizedMs": 14.699999988079071,
+      "gpuSynchronizedComputationMs": 7.200000017881393,
+      "gpuFinalReadbackMs": 6,
+      "gpuMemoryTrackedBytes": 8208,
+      "calculatedCpuOverGpuRatio": 2.0416666599404483,
+      "numerical": {
+        "maxAbsoluteError": 1.7881393432617188e-7,
+        "rootMeanSquareError": 2.0168355057918442e-8,
+        "invalidCount": 0
+      },
+      "energyRelativeDrift": 0.000313408407275858,
+      "momentumError": 4.197952391954418e-9
+    },
+    {
+      "solver": "newtonian-direct-nbody",
+      "workload": 256,
+      "steps": 40,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 21.599999994039536,
+      "cpuReferenceMs": 36.89999997615814,
+      "cpuOptimizedMs": 36.89999997615814,
+      "gpuSynchronizedComputationMs": 10,
+      "gpuFinalReadbackMs": 5,
+      "gpuMemoryTrackedBytes": 16400,
+      "calculatedCpuOverGpuRatio": 3.689999997615814,
+      "numerical": {
+        "maxAbsoluteError": 2.514570951461792e-7,
+        "rootMeanSquareError": 2.2648066938971832e-8,
+        "invalidCount": 0
+      },
+      "energyRelativeDrift": 0.000035514954171728214,
+      "momentumError": 1.0347627185658403e-8
+    },
+    {
+      "solver": "newtonian-direct-nbody",
+      "workload": 512,
+      "steps": 40,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 17.900000005960464,
+      "cpuReferenceMs": 103.19999998807907,
+      "cpuOptimizedMs": 103.19999998807907,
+      "gpuSynchronizedComputationMs": 15.199999988079071,
+      "gpuFinalReadbackMs": 3.600000023841858,
+      "gpuMemoryTrackedBytes": 32784,
+      "calculatedCpuOverGpuRatio": 6.7894736887510465,
+      "numerical": {
+        "maxAbsoluteError": 5.364418029785156e-7,
+        "rootMeanSquareError": 3.1968516917115564e-8,
+        "invalidCount": 0
+      },
+      "energyRelativeDrift": 0.0004767789200416426,
+      "momentumError": 1.0364917262147e-8
+    },
+    {
+      "solver": "grayscott-9point",
+      "workload": 9216,
+      "steps": 40,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 103.7999999821186,
+      "cpuReferenceMs": 246.5,
+      "cpuOptimizedMs": 33.900000005960464,
+      "gpuSynchronizedComputationMs": 4.5999999940395355,
+      "gpuFinalReadbackMs": 4.600000023841858,
+      "gpuMemoryTrackedBytes": 147504,
+      "calculatedCpuOverGpuRatio": 7.369565228236195,
+      "numerical": {
+        "maxAbsoluteError": 0.0000028014183044433594,
+        "rootMeanSquareError": 4.8250236761053135e-8,
+        "invalidCount": 0
+      },
+      "optimizedCpuVsOracleMaxAbs": 0
+    },
+    {
+      "solver": "grayscott-9point",
+      "workload": 36864,
+      "steps": 40,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 19.599999994039536,
+      "cpuReferenceMs": 527.7999999821186,
+      "cpuOptimizedMs": 41.5,
+      "gpuSynchronizedComputationMs": 4.9000000059604645,
+      "gpuFinalReadbackMs": 3.9000000059604645,
+      "gpuMemoryTrackedBytes": 589872,
+      "calculatedCpuOverGpuRatio": 8.469387744799697,
+      "numerical": {
+        "maxAbsoluteError": 0.000009179115295410156,
+        "rootMeanSquareError": 7.192773333957914e-8,
+        "invalidCount": 0
+      },
+      "optimizedCpuVsOracleMaxAbs": 0
+    },
+    {
+      "solver": "grayscott-9point",
+      "workload": 147456,
+      "steps": 12,
+      "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+      "compilationAndInitializationMs": 16.899999976158142,
+      "cpuReferenceMs": 473.40000000596046,
+      "cpuOptimizedMs": 75.09999999403954,
+      "gpuSynchronizedComputationMs": 7.199999988079071,
+      "gpuFinalReadbackMs": 5.600000023841858,
+      "gpuMemoryTrackedBytes": 2359344,
+      "calculatedCpuOverGpuRatio": 10.430555571997424,
+      "numerical": {
+        "maxAbsoluteError": 5.364418029785156e-7,
+        "rootMeanSquareError": 2.1770703740418566e-8,
+        "invalidCount": 0
+      },
+      "optimizedCpuVsOracleMaxAbs": 0
+    }
+  ]
+}

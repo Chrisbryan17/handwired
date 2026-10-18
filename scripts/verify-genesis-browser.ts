@@ -101,7 +101,9 @@ async function run(){
     const mobile=process.argv.includes('--mobile')
     await cmd('Emulation.setDeviceMetricsOverride',{width:mobile?390:1440,
       height:mobile?844:900,deviceScaleFactor:mobile?2:1,mobile})
-    await cmd('Page.navigate',{url:'http://127.0.0.1:39140/'})
+    const publicRoute='https://chrisbryan17.github.io/handwired/neural-genesis/'
+    const publicMode=process.argv.includes('--public')
+    await cmd('Page.navigate',{url:publicMode?publicRoute:'http://127.0.0.1:39140/'})
     let state:{chip:string,step:number,error:string}|undefined
     for(let i=0;i<120;i++){
       await delay(250)
@@ -139,7 +141,7 @@ async function run(){
       await evaluate(`document.querySelector('#pause')?.click()`)
       await delay(130)
     }
-    const summary={ok:success,date:new Date().toISOString(),browser:executable,viewport:mobile?'390x844-mobile':'1440x900-desktop',
+    const summary={ok:success,date:new Date().toISOString(),browser:executable,publicRoute:publicMode?publicRoute:null,viewport:mobile?'390x844-mobile':'1440x900-desktop',
       test:'Genesis 12+ WebGPU chemistry+Handwired steps and one independent CPU chemical parity',
       adapter,software,gpuHardwareIdentified,stepsBeforeVerification:state.step,
       verification:verify,frameCadenceNotKernelTime:true,screenshotStep}
