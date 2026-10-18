@@ -32,6 +32,7 @@ export async function verifyLightGpuGeometry(renderer:LightGpuRenderer){
   rayList.push({origin:[0,0,-2.85],direction:[0,1,0]})
   rayList.push({origin:[0,0,-3],direction:[1,0,0]})
   rayList.push({origin:[0,0,-3],direction:[0,-1,0]})
+  rayList.push({origin:[0,0,2.4],direction:[0,0,1]}) // guaranteed camera-side miss
   const count=rayList.length
   const source=new Float32Array(count*8)
   for(let i=0;i<count;i++){
@@ -90,7 +91,7 @@ export async function verifyLightGpuGeometry(renderer:LightGpuRenderer){
       maxNormalError=Math.max(maxNormalError,normalError)
       if(tError>0.002||normalError>0.002)mismatches++
     }
-    return {ok:mismatches===0&&hits>0&&mirrorHits>0&&glassHits>0,
+    return {ok:mismatches===0&&hits>0&&missedRays>0&&mirrorHits>0&&glassHits>0&&lightHits>0,
       rays:count,hits,missedRays,lightHits,mirrorHits,glassHits,
       mismatches,maxTError,maxNormalError,
       positionTolerance:0.002,normalTolerance:0.002,
