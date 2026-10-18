@@ -76,7 +76,7 @@ export function rigidBodyDiagnostics(state:SphereBodies) {
     let speed2=0
     for(let k=0;k<3;k++){
       const velocity=state.velocities[base+k]!
-      momentum[k]+=mass*velocity
+      momentum[k]=momentum[k]!+mass*velocity
       speed2+=velocity*velocity
     }
     kinetic+=.5*mass*speed2
@@ -138,16 +138,16 @@ export function stepSphereContactsCpu(initial:SphereBodies,
       const correction=Math.max(0,depth-settings.penetrationSlop)*
         settings.correctionFraction/sumInv
       const va=i*3,vb=j*3
-      deltaVelocity[va]-=ix*invA;deltaVelocity[va+1]-=iy*invA
-      deltaVelocity[va+2]-=iz*invA
-      deltaVelocity[vb]+=ix*invB;deltaVelocity[vb+1]+=iy*invB
-      deltaVelocity[vb+2]+=iz*invB
-      deltaPosition[va]-=correction*nx*invA
-      deltaPosition[va+1]-=correction*ny*invA
-      deltaPosition[va+2]-=correction*nz*invA
-      deltaPosition[vb]+=correction*nx*invB
-      deltaPosition[vb+1]+=correction*ny*invB
-      deltaPosition[vb+2]+=correction*nz*invB
+      deltaVelocity[va]=deltaVelocity[va]! - (ix*invA);deltaVelocity[va+1]=deltaVelocity[va+1]! - (iy*invA)
+      deltaVelocity[va+2]=deltaVelocity[va+2]! - (iz*invA)
+      deltaVelocity[vb]=deltaVelocity[vb]! + (ix*invB);deltaVelocity[vb+1]=deltaVelocity[vb+1]! + (iy*invB)
+      deltaVelocity[vb+2]=deltaVelocity[vb+2]! + (iz*invB)
+      deltaPosition[va]=deltaPosition[va]! - (correction*nx*invA)
+      deltaPosition[va+1]=deltaPosition[va+1]! - (correction*ny*invA)
+      deltaPosition[va+2]=deltaPosition[va+2]! - (correction*nz*invA)
+      deltaPosition[vb]=deltaPosition[vb]! + (correction*nx*invB)
+      deltaPosition[vb+1]=deltaPosition[vb+1]! + (correction*ny*invB)
+      deltaPosition[vb+2]=deltaPosition[vb+2]! + (correction*nz*invB)
     }
     if(contactsThisIteration===0)break
     iterationsUsed++
