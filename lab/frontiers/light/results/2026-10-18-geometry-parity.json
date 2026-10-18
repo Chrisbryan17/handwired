@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "date": "2026-10-18T05:38:46.228Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "actualHardwareAdapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "hardware": true,
+  "test": "12-sample actual WebGPU multi-bounce area-light transport and radiance readback",
+  "geometry": {
+    "ok": true,
+    "rays": 136,
+    "hits": 135,
+    "missedRays": 1,
+    "lightHits": 3,
+    "mirrorHits": 10,
+    "glassHits": 5,
+    "mismatches": 0,
+    "maxTError": 0.000010573732841301364,
+    "maxNormalError": 0.000011010310207393292,
+    "positionTolerance": 0.002,
+    "normalTolerance": 0.002,
+    "note": "GPU scene intersection compared to independent CPU ray oracle, not full stochastic path/radiance parity"
+  },
+  "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+  "samples": 12,
+  "pixels": 19200,
+  "invalid": 0,
+  "nonzero": 19155,
+  "maxLinearRadianceSum": 564,
+  "meanLinearRadianceSum": 1.0262758403651433,
+  "cpuReferenceSample": [
+    0.5567638333602615,
+    0.6620614398258933,
+    0.468708317802
+  ],
+  "hardwareExpected": true
+}
