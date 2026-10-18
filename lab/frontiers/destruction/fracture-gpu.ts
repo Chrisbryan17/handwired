@@ -123,6 +123,21 @@ fn advanceNodes(@builtin(global_invocation_id) id:vec3<u32>){
 `
 
 const usage={STORAGE:128,COPY_DST:8,COPY_SRC:4,UNIFORM:64,MAP_READ:1}
+export const bondedImpactWgsl=`
+struct Impulse { node:u32,padA:u32,padB:u32,padC:u32,vector:vec4<f32> };
+@group(0) @binding(0) var<storage,read> positions:array<vec4<f32>>;
+@group(0) @binding(1) var<storage,read_write> velocities:array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> impulse:Impulse;
+@compute @workgroup_size(1)
+fn applyImpulse(){
+ let i=impulse.node;
+ if(i>=arrayLength(&positions)){return;}
+ let inv=positions[i].w;
+ let prev=velocities[i];
+ velocities[i]=vec4<f32>(prev.xyz+inv*impulse.vector.xyz,prev.w);
+}
+`
+
 export class BondedStructureGpu{
  readonly gpu:GpuAllocation
  readonly nodeCount:number
@@ -131,6 +146,10 @@ export class BondedStructureGpu{
  readonly nodePositions:GPUBuffer
  readonly nodeVelocities:GPUBuffer
  readonly fractureState:GPUBuffer
+ readonly bondEndpoints:GPUBuffer
+ private impactProgram:GPUComputePipeline|null=null
+ private impactBuffer:GPUBuffer|null=null
+ private impactBindings:GPUBindGroup|null=null
  private readonly outPos:GPUBuffer
  private readonly outVel:GPUBuffer
  private readonly updateBonds:GPUComputePipeline
@@ -141,13 +160,14 @@ export class BondedStructureGpu{
  private disposed=false
  private frames=0
  private constructor(gpu:GpuAllocation,initial:BondedBody,params:BondedSettings,
-  pos:GPUBuffer,vel:GPUBuffer,fractureState:GPUBuffer,
+  pos:GPUBuffer,vel:GPUBuffer,fractureState:GPUBuffer,bondEndpoints:GPUBuffer,
   outPos:GPUBuffer,outVel:GPUBuffer,
   updateBonds:GPUComputePipeline,updateNodes:GPUComputePipeline,
   bondsBind:GPUBindGroup,nodesBind:GPUBindGroup){
    this.gpu=gpu;this.initial=initial;this.settings=params
    this.nodeCount=initial.positions.length/4;this.bondCount=initial.endpoints.length/2
    this.nodePositions=pos;this.nodeVelocities=vel;this.fractureState=fractureState
+   this.bondEndpoints=bondEndpoints
    this.outPos=outPos;this.outVel=outVel
    this.updateBonds=updateBonds;this.updateNodes=updateNodes
    this.bondsBind=bondsBind;this.nodesBind=nodesBind
@@ -219,7 +239,7 @@ export class BondedStructureGpu{
     }))})
    const bondsBind=bind(bondPipeline,[pos,vel,ends,mat,damage,forces,uniforms])
    const nodesBind=bind(nodePipeline,[pos,vel,csr,links,forces,outPos,outVel,uniforms])
-   return new BondedStructureGpu(gpu,initial,params,pos,vel,damage,outPos,outVel,
+   return new BondedStructureGpu(gpu,initial,params,pos,vel,damage,ends,outPos,outVel,
     bondPipeline,nodePipeline,bondsBind,nodesBind)
   }catch(error){gpu.dispose();throw error}
  }
@@ -243,6 +263,41 @@ export class BondedStructureGpu{
   this.gpu.device.queue.submit([encoder.finish()])
  }
  async flush(){this.ensure();await this.gpu.device.queue.onSubmittedWorkDone();this.ensure()}
+ /** A user-triggered impulse applied directly to the live GPU velocity
+  * state. Impact timing/targets are interactive, not scripted collapse.
+  */
+ applyImpulse(node:number,vector:readonly [number,number,number]){
+  this.ensure()
+  if(!Number.isSafeInteger(node)||node<0||node>=this.nodeCount ||
+    !vector.every(Number.isFinite)||vector.some(x=>Math.abs(x)>500))
+    throw new Error('invalid structural GPU impact')
+  if(this.impactProgram===null){
+   const device=this.gpu.device
+   const module=device.createShaderModule({code:bondedImpactWgsl,
+    label:'GPU interactive impulse on bonded structural node'})
+   this.impactProgram=device.createComputePipeline({
+    layout:'auto',compute:{module,entryPoint:'applyImpulse'}})
+   this.impactBuffer=this.gpu.allocate(32,usage.UNIFORM|usage.COPY_DST,'User-directed impact')
+   this.impactBindings=device.createBindGroup({
+    layout:this.impactProgram.getBindGroupLayout(0),
+    entries:[
+     {binding:0,resource:{buffer:this.nodePositions}},
+     {binding:1,resource:{buffer:this.nodeVelocities}},
+     {binding:2,resource:{buffer:this.impactBuffer}},
+    ]})
+  }
+  const data=new ArrayBuffer(32),view=new DataView(data)
+  view.setUint32(0,node,true)
+  for(let i=0;i<3;i++)view.setFloat32(16+i*4,vector[i]!,true)
+  this.gpu.device.queue.writeBuffer(this.impactBuffer!,0,data)
+  const encoder=this.gpu.device.createCommandEncoder()
+  const pass=encoder.beginComputePass({label:'Interactive structural GPU impact'})
+  pass.setPipeline(this.impactProgram)
+  pass.setBindGroup(0,this.impactBindings!)
+  pass.dispatchWorkgroups(1)
+  pass.end()
+  this.gpu.device.queue.submit([encoder.finish()])
+ }
  async read():Promise<BondedBody>{
   this.ensure()
   const dev=this.gpu.device
