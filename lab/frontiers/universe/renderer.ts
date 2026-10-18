@@ -28,7 +28,7 @@ struct VertexOutput {
   let rotatedZ=sx*particle.position.y+cx*z;
   let distance=max(.22,camera.zoom-rotatedZ);
   let aspect=camera.height/max(camera.width,1.0);
-  let pointScale=select(.009,.032,particle.position.w>.10);
+  let pointScale=select(.027,.105,particle.position.w>.10);
   let radius=camera.scale*pointScale/distance;
   let base=vec2<f32>(x*aspect,y)*1.6/distance;
   let corner=corners[vi];
@@ -48,9 +48,9 @@ struct VertexOutput {
 @fragment fn fragment(input:VertexOutput)->@location(0) vec4<f32> {
   let r=length(input.uv);
   if(r>1.0){discard;}
-  let core=pow(max(0.0,1.0-r),1.5);
-  let halo=.24*pow(max(0.0,1.0-r),3.5);
-  return vec4<f32>(input.color*(core+halo)*1.25,1.0);
+  let core=pow(max(0.0,1.0-r*r),1.25);
+  let halo=.30*pow(max(0.0,1.0-r),.7);
+  return vec4<f32>(input.color*(core+halo)*1.55,1.0);
 }
 `
 export class UniverseRenderer {

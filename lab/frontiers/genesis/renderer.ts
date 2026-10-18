@@ -20,11 +20,21 @@ struct VertexOutput{
  output.uv=vec2<f32>((pos.x+1.0)*.5,(1.0-pos.y)*.5);
  return output;
 }
+fn field(x:i32,y:i32,ch:u32)->f32{
+ let ix=u32(clamp(x,0,i32(p.width)-1));
+ let iy=u32(clamp(y,0,i32(p.height)-1));
+ return state[(iy*u32(p.width)+ix)*2u+ch];
+}
+fn bilinear(pos:vec2<f32>,ch:u32)->f32{
+ let x=i32(floor(pos.x));let y=i32(floor(pos.y));
+ let tx=fract(pos.x);let ty=fract(pos.y);
+ let top=mix(field(x,y,ch),field(x+1,y,ch),tx);
+ let bottom=mix(field(x,y+1,ch),field(x+1,y+1,ch),tx);
+ return mix(top,bottom,ty);
+}
 @fragment fn fragment(input:VertexOutput)->@location(0) vec4<f32>{
- let x=min(u32(input.uv.x*p.width),u32(p.width)-1u);
- let y=min(u32(input.uv.y*p.height),u32(p.height)-1u);
- let index=(y*u32(p.width)+x)*2u;
- let u=state[index];let v=state[index+1u];
+ let uv=input.uv*vec2<f32>(p.width,p.height)-vec2<f32>(.5,.5);
+ let u=bilinear(uv,0u);let v=bilinear(uv,1u);
  let intensity=smoothstep(.09,.46,v);
  let high=smoothstep(.24,.75,v);
  let low=smoothstep(.05,.18,v);

@@ -113,10 +113,24 @@ async function run(){
       /swiftshader|llvmpipe|lavapipe|softpipe|software|subzero/i.test(label)
     const gpuHardwareIdentified=Boolean(adapter&&typeof adapter['vendor']==='string'&&adapter['vendor']!==''&&!software)
     const success=verify.startsWith('PASS')&&state.step>=12&&gpuHardwareIdentified
+    // Capture evolved chemistry rather than a reset, stationary first frame.
+    // The parity test above is complete before this separate visual workload.
+    let screenshotStep:number|null=null
+    if(success && process.argv.includes('--screenshot')){
+      await evaluate(`(()=>{const slider=document.querySelector('#speed') as HTMLInputElement|null; if(slider){slider.value='8';slider.dispatchEvent(new Event('input',{bubbles:true}))}document.querySelector('#pause')?.click();return true})()`.replace(' as HTMLInputElement|null',''))
+      for(let i=0;i<160;i++){
+        await delay(250)
+        const progress=Number(await evaluate(`Number(document.querySelector('#steps')?.textContent?.replace(/,/g,'')||0)`))
+        if(progress>=1200){screenshotStep=progress;break}
+      }
+      if(screenshotStep===null)throw new Error('Genesis could not reach 1200 real GPU steps for visual QA')
+      await evaluate(`document.querySelector('#pause')?.click()`)
+      await delay(130)
+    }
     const summary={ok:success,date:new Date().toISOString(),browser:executable,
       test:'Genesis 12+ WebGPU chemistry+Handwired steps and one independent CPU chemical parity',
       adapter,software,gpuHardwareIdentified,stepsBeforeVerification:state.step,
-      verification:verify,frameCadenceNotKernelTime:true}
+      verification:verify,frameCadenceNotKernelTime:true,screenshotStep}
     if(process.argv.includes('--screenshot')){
       const response=await cmd('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})
       const base64=response?.['data']

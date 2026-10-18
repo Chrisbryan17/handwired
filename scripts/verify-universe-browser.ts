@@ -113,10 +113,24 @@ async function run(){
       /swiftshader|llvmpipe|lavapipe|softpipe|software|subzero/i.test(label)
     const gpuHardwareIdentified=Boolean(adapter&&typeof adapter['vendor']==='string'&&adapter['vendor']!==''&&!software)
     const success=verify.startsWith('PASS')&&state.step>=12&&gpuHardwareIdentified
+    // The screenshot is evidence of evolved gravitational simulation, not the
+    // initial positions after parity validation reset.
+    let screenshotStep:number|null=null
+    if(success && process.argv.includes('--screenshot')){
+      await evaluate(`document.querySelector('#pause')?.click()`)
+      for(let i=0;i<160;i++){
+        await delay(250)
+        const progress=Number(await evaluate(`Number(document.querySelector('#steps')?.textContent?.replace(/,/g,'')||0)`))
+        if(progress>=280){screenshotStep=progress;break}
+      }
+      if(screenshotStep===null)throw new Error('Universe could not reach 280 real GPU steps for visual QA')
+      await evaluate(`document.querySelector('#pause')?.click()`)
+      await delay(130)
+    }
     const summary={ok:success,date:new Date().toISOString(),browser:executable,
       test:'Universe 12+ WebGPU force+Handwired steps and one independent CPU parity',
       adapter,software,gpuHardwareIdentified,stepsBeforeVerification:state.step,
-      verification:verify,frameCadenceNotKernelTime:true}
+      verification:verify,frameCadenceNotKernelTime:true,screenshotStep}
     if(process.argv.includes('--screenshot')){
       const response=await cmd('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})
       const base64=response?.['data']
