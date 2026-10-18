@@ -9,7 +9,7 @@ function tensionBreak():BondedBody{
  // Geometric overstretch is the actual reason for fracture, not a
  // scripted fixed-time collapse event.
  const node=5*3*2+1*2+0
- copy.positions[node*4]+=2.2
+ copy.positions[node*4]=Math.fround(copy.positions[node*4]!+2.2)
  return copy
 }
 const scenarios=[
