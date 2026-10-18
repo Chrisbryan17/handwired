@@ -143,7 +143,6 @@ export class SphereContactGpu {
   private readonly predictedVelocities:GPUBuffer
   private readonly resolvedPositions:GPUBuffer
   private readonly resolvedVelocities:GPUBuffer
-  private readonly parameters:GPUBuffer
   private readonly prediction:GPUComputePipeline
   private readonly response:GPUComputePipeline
   private readonly binding:GPUBindGroup
@@ -154,7 +153,7 @@ export class SphereContactGpu {
     pipelines:readonly [GPUComputePipeline,GPUComputePipeline],binding:GPUBindGroup){
     this.grid=grid;this.config=config;this.count=grid.pointCount
     ;[this.velocities,this.predictedPositions,this.predictedVelocities,
-      this.resolvedPositions,this.resolvedVelocities,this.parameters]=buffers
+      this.resolvedPositions,this.resolvedVelocities]=buffers
     ;[this.prediction,this.response]=pipelines
     this.binding=binding
   }
@@ -236,7 +235,6 @@ export class SphereContactGpu {
   }
   encodeStep(encoder:GPUCommandEncoder){
     this.ensure()
-    const device=this.grid.gpu.device
     const bytes=this.count*16
     let pass=encoder.beginComputePass({label:'Contact solver: semi-implicit GPU sphere prediction'})
     pass.setPipeline(this.prediction);pass.setBindGroup(0,this.binding)
@@ -251,7 +249,6 @@ export class SphereContactGpu {
     encoder.copyBufferToBuffer(this.resolvedPositions,0,this.grid.positions,0,bytes)
     encoder.copyBufferToBuffer(this.resolvedVelocities,0,this.velocities,0,bytes)
     this.ticks++
-    void device
   }
   step(){
     this.ensure()
