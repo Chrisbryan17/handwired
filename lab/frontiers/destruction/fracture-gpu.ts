@@ -133,7 +133,6 @@ export class BondedStructureGpu{
  readonly fractureState:GPUBuffer
  private readonly outPos:GPUBuffer
  private readonly outVel:GPUBuffer
- private readonly forces:GPUBuffer
  private readonly updateBonds:GPUComputePipeline
  private readonly updateNodes:GPUComputePipeline
  private readonly bondsBind:GPUBindGroup
@@ -143,13 +142,13 @@ export class BondedStructureGpu{
  private frames=0
  private constructor(gpu:GpuAllocation,initial:BondedBody,params:BondedSettings,
   pos:GPUBuffer,vel:GPUBuffer,fractureState:GPUBuffer,
-  outPos:GPUBuffer,outVel:GPUBuffer,forces:GPUBuffer,
+  outPos:GPUBuffer,outVel:GPUBuffer,
   updateBonds:GPUComputePipeline,updateNodes:GPUComputePipeline,
   bondsBind:GPUBindGroup,nodesBind:GPUBindGroup){
    this.gpu=gpu;this.initial=initial;this.settings=params
    this.nodeCount=initial.positions.length/4;this.bondCount=initial.endpoints.length/2
    this.nodePositions=pos;this.nodeVelocities=vel;this.fractureState=fractureState
-   this.outPos=outPos;this.outVel=outVel;this.forces=forces
+   this.outPos=outPos;this.outVel=outVel
    this.updateBonds=updateBonds;this.updateNodes=updateNodes
    this.bondsBind=bondsBind;this.nodesBind=nodesBind
  }
@@ -220,7 +219,7 @@ export class BondedStructureGpu{
     }))})
    const bondsBind=bind(bondPipeline,[pos,vel,ends,mat,damage,forces,uniforms])
    const nodesBind=bind(nodePipeline,[pos,vel,csr,links,forces,outPos,outVel,uniforms])
-   return new BondedStructureGpu(gpu,initial,params,pos,vel,damage,outPos,outVel,forces,
+   return new BondedStructureGpu(gpu,initial,params,pos,vel,damage,outPos,outVel,
     bondPipeline,nodePipeline,bondsBind,nodesBind)
   }catch(error){gpu.dispose();throw error}
  }
