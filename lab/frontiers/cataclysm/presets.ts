@@ -61,3 +61,32 @@ export function inspectPreset(name:CataclysmPreset,p:SphSettings=cataclysmSettin
  }
  return {n,totalMass,activeMomentum}
 }
+
+/** Large, deterministic real WCSPH state for *hardware-only* throughput and
+ * stability testing. CPU all-pairs oracle deliberately remains capped at
+ * 1024 points; large GPU scenes only carry conservation/invariant evidence.
+ */
+export function makeGpuStressField(nx=32,ny=24,nz=24,spacing=.34):SphState{
+ const n=nx*ny*nz
+ if(![nx,ny,nz].every(x=>Number.isSafeInteger(x)&&x>=2&&x<=72)||
+  !Number.isFinite(spacing)||spacing<.25||spacing>.65||
+  !Number.isSafeInteger(n)||n>131_072)
+  throw new Error('invalid large GPU SPH workload')
+ const positions=new Float32Array(n*4)
+ const velocities=new Float32Array(n*4)
+ let index=0
+ for(let y=0;y<ny;y++)for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){
+  const at=index*4
+  positions[at]=Math.fround(-4.6+x*spacing)
+  positions[at+1]=Math.fround(-2+y*spacing)
+  positions[at+2]=Math.fround(-2+z*spacing)
+  positions[at+3]=1
+  velocities[at]=Math.fround(.15+((index*11)%13-6)*.018)
+  velocities[at+2]=Math.fround(((index*5)%17-8)*.017)
+  index++
+ }
+ const state={positions,velocities}
+ validateSph(state,{
+  ...sphDefaults,dt:.001,restDensity:25,stiffness:2.5,viscosity:.025},131_072)
+ return state
+}

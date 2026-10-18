@@ -1,5 +1,5 @@
 import {test,expect} from 'bun:test'
-import {makeCataclysmPreset,cataclysmSettings,inspectPreset,
+import {makeCataclysmPreset,cataclysmSettings,inspectPreset,makeGpuStressField,
  type CataclysmPreset} from './presets.ts'
 import {stepSphCpu} from './model.ts'
 test('all physical 3D fluid initial conditions are deterministic and within numerical grid',()=>{
@@ -28,4 +28,17 @@ test('physical control bounds reject invalid and nonfinite input',()=>{
  expect(()=>cataclysmSettings(9,0,.12)).toThrow()
  expect(()=>cataclysmSettings(9,12,Infinity)).toThrow()
  expect(()=>makeCataclysmPreset('fake' as CataclysmPreset)).toThrow()
+})
+
+test('18,432 physically represented particles remain inside GPU stress bounds',()=>{
+ const large=makeGpuStressField()
+ expect(large.positions.length/4).toBe(18_432)
+ expect(large.velocities.length).toBe(large.positions.length)
+ let totalMass=0
+ for(let i=0;i<large.positions.length;i+=4){
+  totalMass+=large.positions[i+3]!
+  expect(Number.isFinite(large.positions[i]!)).toBe(true)
+ }
+ expect(totalMass).toBe(18_432)
+ expect(()=>makeGpuStressField(72,72,72)).toThrow()
 })
