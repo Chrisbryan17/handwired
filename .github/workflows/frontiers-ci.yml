@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - 'feat/frontier-*'
-      - 'feat/frontiers-platform-*'
+      - 'feat/frontiers-*'
     paths:
       - 'src/runtime/frontiers-device.ts'
+      - 'src/runtime/frontiers-spatial*.ts'
       - 'lab/frontiers/**'
       - 'assets/frontiers*'
       - 'scripts/demo-site-pages.ts'
@@ -37,7 +38,7 @@ jobs:
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
       - name: Independent model verification
-        run: bun test --timeout 30000 lab/frontiers
+        run: bun test --timeout 30000 lab/frontiers src/runtime/frontiers-spatial.test.ts
       - name: Strict numerical and browser TypeScript
         run: |
           if [ -f lab/frontiers/universe/tsconfig.json ]; then
@@ -46,10 +47,16 @@ jobs:
           if [ -f lab/frontiers/genesis/tsconfig.json ]; then
             bunx tsc -p lab/frontiers/genesis/tsconfig.json --pretty false
           fi
+          if [ -f lab/frontiers/light/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/light/tsconfig.json --pretty false
+          fi
+          if [ -f lab/frontiers/spatial/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/spatial/tsconfig.json --pretty false
+          fi
           bunx tsc -p . --pretty false
       - name: Type-aware lint
-        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts lab/frontiers
-      - name: Existing demonstration regression and 12-route production build
+        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts lab/frontiers
+      - name: Existing demonstration regression and prefix-safe production build
         run: |
           bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
           bun run site:build

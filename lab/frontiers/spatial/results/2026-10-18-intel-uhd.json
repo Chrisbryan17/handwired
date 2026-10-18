@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "date": "2026-10-18T05:45:39.200Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "actualHardwareAdapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "hardware": true,
+  "test": "WebGPU linked-cell neighbor counts vs independent O(N²) CPU",
+  "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+  "algorithm": "WebGPU atomic linked-cell scatter and 27-cell Euclidean radius queries",
+  "oracle": "independent CPU O(N^2) exact neighbor counts",
+  "results": [
+    {
+      "name": "uniform-384",
+      "points": 384,
+      "cells": 1000,
+      "mismatches": 0,
+      "maxAbsoluteError": 0,
+      "totalNeighborCount": 268,
+      "synchronizedMs": 9.299999982118607,
+      "readbackMs": 3.7000000178813934,
+      "trackedGpuBytes": 13280,
+      "gpuBuildVersions": 1
+    },
+    {
+      "name": "dense-127-plus-outside",
+      "points": 128,
+      "cells": 64,
+      "mismatches": 0,
+      "maxAbsoluteError": 0,
+      "totalNeighborCount": 16002,
+      "synchronizedMs": 3.9000000059604645,
+      "readbackMs": 7,
+      "trackedGpuBytes": 3392,
+      "gpuBuildVersions": 1
+    }
+  ],
+  "hardwareExpected": true,
+  "gpuTiming": "host command + queue completion, not timestamp-query"
+}
