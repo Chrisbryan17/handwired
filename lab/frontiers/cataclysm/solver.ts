@@ -157,6 +157,7 @@ export class CataclysmSphGpu {
  readonly grid:SpatialGridGpu
  readonly gpu:GpuAllocation
  readonly count:number
+ get velocityBuffer():GPUBuffer{this.ensure();return this.velocities}
  readonly settings:SphSettings
  private readonly velocities:GPUBuffer
  private readonly density:GPUBuffer
