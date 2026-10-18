@@ -1,8 +1,9 @@
 # Neural Cataclysm — 3D weakly compressible SPH research slice
 
-**State:** CPU-verified 3D fluid solver, WebGPU linked-cell SPH compute
-implementation and interactive GPU-buffer-backed particle laboratory.
-**Hardware GPU numerical differential and visual QA: OPEN.**
+**State:** CPU-verified and **native NVIDIA Tesla T4 Vulkan/GPU verified**
+for the exact WebGPU WGSL linked-cell, pressure and viscosity solver. Real
+interactive browser implementation is in the feature branch.
+**Browser execution/visual QA on hardware: OPEN.**
 
 This is not yet a coastal tsunami simulator or physically reconstructed
 free-surface renderer. The actual particle positions are computed by
@@ -46,6 +47,37 @@ is performed by `step()`. Diagnostics `read()` and
 `readDensityPressure()` intentionally synchronize when explicitly
 requested for correctness testing.
 
+## Verified NVIDIA hardware execution (2026-10-18)
+
+The full, actual 3D SPH WGSL modules were exported unchanged from
+Handwired source and executed through `wgpu-native` using a
+**physical NVIDIA Tesla T4 discrete GPU**, driver 580.178.04, Vulkan
+backend. The actual adapter identity was inspected from `wgpu-native`,
+not inferred from CUDA presence. Software adapters were rejected.
+
+An independent handwritten CPU `model.ts` oracle supplied positions,
+velocities, density and pressure baselines; results were compared after
+synchronized device-to-host readback:
+
+| Scenario | N | GPU steps | Max state error | Max pressure error | Nonfinite | Mass loss |
+|---|---:|---:|---:|---:|---:|---:|
+| Pressure | 64 | 1 | 2.980e-8 | 4.196e-5 | 0 | 0 |
+| Viscous flow | 80 | 4 | 1.192e-7 | 3.052e-5 | 0 | 0 |
+| Gravity flow | 120 | 8 | 2.384e-7 | 2.289e-5 | 0 | 0 |
+
+Permanent machine-readable evidence:
+[`results/2026-10-18-tesla-t4-native-full-sph.json`](../lab/frontiers/cataclysm/results/2026-10-18-tesla-t4-native-full-sph.json).
+The separately compiled Handwired pressure Circuit also passed
+**256/256 exact comparisons** (max error 0.0):
+[`pressure evidence`](../lab/frontiers/cataclysm/results/2026-10-18-tesla-t4-native-pressure.json).
+
+These are actual NVIDIA GPU compute results, **not Chromium
+browser WebGPU tests**. The prior Kaggle Chrome experiment correctly
+rejected SwiftShader even when native Vulkan could see Tesla T4s.
+The timings in the reports include shader setup, CPU submission and/or
+readback. Do not misrepresent them as isolated GPU kernel time or
+CPU/GPU speedup.
+
 ## Browser research laboratory
 
 `demo.html` offers three deterministic physical scenarios:
@@ -78,7 +110,7 @@ CPU fallback or SwiftShader must not count as hardware verification.
 
 ## Remaining work
 
-- Hardware-executed GPU/CPU differential tests and evidence capture.
+- Chromium/WebGPU execution on identified physical GPU and real screenshots.
 - GPU memory stress and larger particle counts with conservation checks.
 - Spatial locality improvements (contiguous/sorted cells).
 - Stabilization, CFL-based adaptive stepping, WCSPH tensile instability
