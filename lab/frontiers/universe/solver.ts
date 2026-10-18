@@ -1,6 +1,6 @@
 import {emitInlineCircuitWgsl} from '../../../src/runtime/webgpu-inline.ts'
 import {requestStrictGpu,type GpuAllocation} from '../../../src/runtime/frontiers-device.ts'
-import {buildUniverseCircuit,checkUniverseState,FIXED_DT,STRIDE,
+import {buildUniverseCircuit,checkUniverseState,STRIDE,
   type UniverseParams,type UniverseState} from './model.ts'
 
 /**
@@ -73,7 +73,7 @@ export class UniverseGpuSolver {
     try {
       if(Math.ceil(count/64)>gpu.device.limits.maxComputeWorkgroupsPerDimension)
         throw new Error('N-body exceeds dispatch dimension limit')
-      const bits=GPUBufferUsage
+      const bits={STORAGE:128,COPY_SRC:4,COPY_DST:8,UNIFORM:64}
       const bytes=state.byteLength
       const buffers:[GPUBuffer,GPUBuffer]=[
         gpu.allocate(bytes,bits.STORAGE|bits.COPY_SRC|bits.COPY_DST,'N-body A'),
@@ -148,12 +148,12 @@ export class UniverseGpuSolver {
     this.check()
     const bytes=this.count*STRIDE*4
     const stage=this.gpu.device.createBuffer({size:bytes,
-      usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ})
+      usage:8|1})
     try{
       const encoder=this.gpu.device.createCommandEncoder()
       encoder.copyBufferToBuffer(this.currentBuffer,0,stage,0,bytes)
       this.gpu.device.queue.submit([encoder.finish()])
-      await stage.mapAsync(GPUMapMode.READ)
+      await stage.mapAsync(1)
       const data=new Float32Array(stage.getMappedRange().slice(0))
       stage.unmap()
       this.check()

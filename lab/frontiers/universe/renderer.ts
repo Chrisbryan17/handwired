@@ -76,7 +76,7 @@ export class UniverseRenderer {
   static async create(solver:UniverseGpuSolver,canvas:HTMLCanvasElement):
     Promise<UniverseRenderer> {
     const device=solver.gpu.device
-    const context=canvas.getContext('webgpu')
+    const context=canvas.getContext('webgpu') as GPUCanvasContext | null
     if(!context)throw new Error('No canvas WebGPU context')
     const format=navigator.gpu.getPreferredCanvasFormat()
     context.configure({device,format,alphaMode:'opaque'})
@@ -92,7 +92,7 @@ export class UniverseRenderer {
       }}]},
       primitive:{topology:'triangle-list'},
     })
-    const uniform=solver.gpu.allocate(32,GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST,'Universe camera')
+    const uniform=solver.gpu.allocate(32,64|8,'Universe camera')
     const bind=(buffer:GPUBuffer)=>device.createBindGroup({
       layout:pipeline.getBindGroupLayout(0),entries:[
         {binding:0,resource:{buffer}},

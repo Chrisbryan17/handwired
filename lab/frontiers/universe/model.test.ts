@@ -12,7 +12,7 @@ test('repeatable seed and explicit positive masses',()=>{
 test('Handwired compiled kick-drift is consistent with independent arithmetic',()=>{
   const {circuit,outputWires}=buildUniverseCircuit()
   const f=Math.fround
-  for(const [i,p,v,a] of [[0,.2,.4,.8],[1,-.4,.3,-.2],[2,.15,-.7,.05]]){
+  for(const [i,p,v,a] of ([[0,.2,.4,.8],[1,-.4,.3,-.2],[2,.15,-.7,.05]] as [number,number,number,number][])){
     const src=Float32Array.from([.2,-.4,.15,.4,.3,-.7,.8,-.2,.05])
     const wires=circuit.evaluateReference(src)
     const vNew=f(f(v)+f(f(a)*f(FIXED_DT)))

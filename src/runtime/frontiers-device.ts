@@ -55,7 +55,7 @@ export async function requestStrictGpu(label = 'Handwired Frontier'): Promise<Gp
       bytes > device.limits.maxBufferSize) {
       throw new Error('Invalid GPU buffer size: ' + bytes)
     }
-    if ((usage & GPUBufferUsage.STORAGE) !== 0 && bytes > device.limits.maxStorageBufferBindingSize) {
+    if ((usage & 128) !== 0 && bytes > device.limits.maxStorageBufferBindingSize) {
       throw new Error('Storage buffer exceeds adapter binding limit: ' + bytes)
     }
     const buffer = device.createBuffer({size: bytes, usage, label: resourceLabel})

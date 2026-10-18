@@ -111,7 +111,7 @@ export function universeDiagnostics(state:UniverseState,
   for(let i=0;i<count;i++){
     const a=i*STRIDE,mi=state[a+3]!
     mass+=mi
-    for(let k=0;k<3;k++)momentum[k]+=mi*state[a+4+k]!
+    for(let k=0;k<3;k++)momentum[k]=momentum[k]!+mi*state[a+4+k]!
     kinetic+=.5*mi*(state[a+4]!**2+state[a+5]!**2+state[a+6]!**2)
     for(let j=i+1;j<count;j++){
       const b=j*STRIDE
