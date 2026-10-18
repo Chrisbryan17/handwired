@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "date": "2026-10-18T04:38:55.551Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "publicRoute": "https://chrisbryan17.github.io/handwired/neural-genesis/",
+  "viewport": "1440x900-desktop",
+  "test": "Genesis 12+ WebGPU chemistry+Handwired steps and one independent CPU chemical parity",
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "software": false,
+  "gpuHardwareIdentified": true,
+  "stepsBeforeVerification": 12,
+  "verification": "PASS · max concentration difference 5.960e-8 / 3.0e-4, invalid 0, mean V 0.00830, cells 36,864 · intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics. One-step agreement does not establish long-running accuracy.",
+  "frameCadenceNotKernelTime": true,
+  "screenshotStep": 1248
+}
