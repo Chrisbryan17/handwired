@@ -1,0 +1,61 @@
+name: Frontiers CPU & Build Verification
+
+on:
+  push:
+    branches:
+      - 'feat/frontier-*'
+      - 'feat/frontiers-platform-*'
+    paths:
+      - 'src/runtime/frontiers-device.ts'
+      - 'lab/frontiers/**'
+      - 'assets/frontiers*'
+      - 'scripts/demo-site-pages.ts'
+      - 'scripts/verify-*-browser.ts'
+      - '.github/workflows/frontiers-ci.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontiers-cpu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpu-verify:
+    name: CPU oracle, strict types, lint and site build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
+      - name: Independent model verification
+        run: bun test --timeout 30000 lab/frontiers
+      - name: Strict numerical and browser TypeScript
+        run: |
+          if [ -f lab/frontiers/universe/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/universe/tsconfig.json --pretty false
+          fi
+          if [ -f lab/frontiers/genesis/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/genesis/tsconfig.json --pretty false
+          fi
+          bunx tsc -p . --pretty false
+      - name: Type-aware lint
+        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts lab/frontiers
+      - name: Existing demonstration regression and 12-route production build
+        run: |
+          bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
+          bun run site:build
+      - name: Upload static build for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: handwired-frontiers-cpu-built-site
+          path: site
+          retention-days: 7
