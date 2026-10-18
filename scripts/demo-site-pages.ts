@@ -19,6 +19,7 @@ const publishedPages: SitePage[] = [
   {source: 'assets/visual-lab.html', path: 'visual-lab/'},
   {source: 'assets/frontiers.html', path: 'frontiers/'},
   {source: 'lab/frontiers/universe/demo.html', path: 'neural-universe/'},
+  {source: 'lab/frontiers/genesis/demo.html', path: 'neural-genesis/'},
   {source: 'lab/visual-benchmarks/demo.html', path: 'visual-benchmarks/'},
   {source: 'lab/visual-swarm/demo.html', path: 'neural-swarm/'},
   {source: 'lab/visual-maze/demo.html', path: 'neural-maze/'},
