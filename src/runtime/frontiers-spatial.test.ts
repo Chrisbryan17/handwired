@@ -17,13 +17,13 @@ test('3D Euclidean neighbors include identical points but exclude self',()=>{
   .5,.5,.5,1, .5,.5,.5,1, 1.5,.5,.5,1,
   .5,1.5,.5,1, .5,.5,1.5,1,
   .5,.5,1.501,1, 4,.5,.5,1])
- expect(Array.from(countSpatialNeighborsCpu(input,cfg))).toEqual([4,4,2,2,2,0,0])
+ expect(Array.from(countSpatialNeighborsCpu(input,cfg))).toEqual([4,4,2,2,3,1,0])
 })
 test('nonzero displaced origin and crossing cell faces are supported',()=>{
  const box:SpatialGridConfig={origin:[-3,-7,2],dimensions:[8,8,8],cellSize:.5,radius:.5}
  const data=Float32Array.from([-2.9,-6.9,2.1,1,
   -2.6,-6.9,2.1,1,-2.1,-6.9,2.1,1])
- expect(Array.from(countSpatialNeighborsCpu(data,box))).toEqual([1,1,0])
+ expect(Array.from(countSpatialNeighborsCpu(data,box))).toEqual([1,2,1])
 })
 test('deterministic densely occupied and zero-neighbor fields',()=>{
  const a=seededSpatialPoints(256,29)
