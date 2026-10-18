@@ -90,7 +90,6 @@ export class SpatialGridGpu {
   readonly cellHeads:GPUBuffer
   readonly next:GPUBuffer
   readonly neighborCounts:GPUBuffer
-  private readonly uniform:GPUBuffer
   private readonly clear:GPUComputePipeline
   private readonly assign:GPUComputePipeline
   private readonly query:GPUComputePipeline
@@ -104,7 +103,7 @@ export class SpatialGridGpu {
     this.gpu=gpu;this.config={...config,origin:[...config.origin] as [number,number,number],
       dimensions:[...config.dimensions] as [number,number,number]}
     this.pointCount=points.length/4;this.cellCount=count
-    ;[this.positions,this.cellHeads,this.next,this.neighborCounts,this.uniform]=buffers
+    ;[this.positions,this.cellHeads,this.next,this.neighborCounts]=buffers
     ;[this.clear,this.assign,this.query]=pipelines
     this.bind=bind
   }

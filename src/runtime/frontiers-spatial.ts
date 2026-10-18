@@ -23,7 +23,7 @@ export function validateSpatialGrid(config:SpatialGridConfig):number {
   if(!Number.isSafeInteger(cells)||cells>4_194_304)
     throw new Error('spatial grid exceeds supported cell budget')
   for(let i=0;i<3;i++){
-    if(!Number.isFinite(origin[i]+dimensions[i]*cellSize))
+    if(!Number.isFinite(origin[i]!+dimensions[i]!*cellSize))
       throw new Error('spatial-grid world extent overflow')
   }
   return cells
