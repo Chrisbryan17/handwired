@@ -19,10 +19,11 @@
 <input id="kill" type="range" min="0.005" max="0.08" step="0.001" value="0.062">
 <label for="speed">Steps per frame <output id="speed-value">1</output></label>
 <input id="speed" type="range" min="1" max="8" step="1" value="1">
-<label for="palette">Display palette</label><select id="palette"><option value="0">Bioluminescent</option><option value="1">Chromatic tissue</option><option value="2">Concentration probe</option></select>
+<label for="brush-mode">Touch / pointer brush</label><select id="brush-mode"><option value="1">Inject reagent V</option><option value="2">Erase reagent V</option></select>
+      <label for="palette">Display palette</label><select id="palette"><option value="0">Bioluminescent</option><option value="1">Chromatic tissue</option><option value="2">Concentration probe</option></select>
 <div class="actions"><button id="pause" type="button">Pause</button><button id="reset" type="button" class="ghost">Reset field</button></div>
 <button id="verify" type="button" class="verify">Compare independent CPU ↔ GPU (one step)</button>
-<p class="hint">Hold left pointer to add reagent V. Hold right pointer to erase. Change rates mid-simulation.</p>
+<p class="hint">Drag on the field to paint. Select inject or erase on touch screens; right-click also erases. Change rates mid-simulation.</p>
 </section>
 <section class="sim"><canvas id="field" aria-label="Live GPU reaction diffusion simulation"></canvas>
 <div class="overlay top"><span><span class="dot"></span> LIVE FIELD / COMPUTE + RENDER</span><span>GRID-PERIODIC · FP32</span></div>

@@ -98,7 +98,9 @@ async function run(){
   try{
     await cmd('Page.enable')
     await cmd('Runtime.enable')
-    await cmd('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
+    const mobile=process.argv.includes('--mobile')
+    await cmd('Emulation.setDeviceMetricsOverride',{width:mobile?390:1440,
+      height:mobile?844:900,deviceScaleFactor:mobile?2:1,mobile})
     await cmd('Page.navigate',{url:'http://127.0.0.1:39140/'})
     let state:{chip:string,step:number,error:string}|undefined
     for(let i=0;i<120;i++){
@@ -137,7 +139,7 @@ async function run(){
       await evaluate(`document.querySelector('#pause')?.click()`)
       await delay(130)
     }
-    const summary={ok:success,date:new Date().toISOString(),browser:executable,
+    const summary={ok:success,date:new Date().toISOString(),browser:executable,viewport:mobile?'390x844-mobile':'1440x900-desktop',
       test:'Universe 12+ WebGPU force+Handwired steps and one independent CPU parity',
       adapter,software,gpuHardwareIdentified,stepsBeforeVerification:state.step,
       verification:verify,frameCadenceNotKernelTime:true,screenshotStep}

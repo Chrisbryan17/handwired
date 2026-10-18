@@ -10,6 +10,7 @@ const feed=element<HTMLInputElement>('feed')
 const kill=element<HTMLInputElement>('kill')
 const speed=element<HTMLInputElement>('speed')
 const palette=element<HTMLSelectElement>('palette')
+const brushMode=element<HTMLSelectElement>('brush-mode')
 const error=element<HTMLElement>('error')
 const pause=element<HTMLButtonElement>('pause')
 const verify=element<HTMLButtonElement>('verify')
@@ -135,7 +136,7 @@ verify.addEventListener('click',()=>{void verifyOneStep()})
 canvas.addEventListener('contextmenu',event=>event.preventDefault())
 canvas.addEventListener('pointerdown',event=>{
  if(!solver)return
- painting=true;erase=event.button===2||event.shiftKey
+ painting=true;erase=event.button===2||event.shiftKey||brushMode.value==='2'
  canvas.setPointerCapture(event.pointerId);paint(event)
 })
 canvas.addEventListener('pointermove',paint)
