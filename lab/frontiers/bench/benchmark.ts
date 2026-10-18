@@ -1,4 +1,4 @@
-import {makeCollision,stepUniverseCpu,universeDiagnostics,STRIDE} from '../universe/model.ts'
+import {makeCollision,stepUniverseCpu,universeDiagnostics} from '../universe/model.ts'
 import {UniverseGpuSolver} from '../universe/solver.ts'
 import {makeGenesis,stepGenesisCpu,genesisDefaults} from '../genesis/model.ts'
 import {GenesisGpuSolver} from '../genesis/solver.ts'
