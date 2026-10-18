@@ -3,18 +3,28 @@
  * Killing only the spawned root leaves GPU, renderer and crashpad child processes
  * alive across test runs, eventually exhausting the host's OS thread capacity.
  */
-function terminateHeadlessBrowser(child: ReturnType<typeof Bun.spawn> | undefined): void {
+function terminateHeadlessBrowser(child: ReturnType<typeof Bun.spawn> | undefined,
+  browserProfile: string): void {
   if (child === undefined) return
   if (process.platform !== 'win32') {child.kill(); return}
+  // The root process can exit while its GPU, renderer and crashpad children
+  // remain orphaned. Process-tree termination alone is insufficient.
   try {
-    const taskkill = Bun.spawnSync(
-      ['taskkill.exe', '/T', '/F', '/PID', String(child.pid)],
-      {stdout:'ignore',stderr:'ignore'},
-    )
-    if (taskkill.exitCode !== 0) child.kill()
-  } catch {
-    child.kill()
-  }
+    Bun.spawnSync(['taskkill.exe', '/T', '/F', '/PID', String(child.pid)],
+      {stdout:'ignore',stderr:'ignore'})
+  } catch {}
+  // Restrict cleanup to this verifier's unique temporary browser profile;
+  // this cannot match the user's normal browsing profile.
+  const escapedProfile = browserProfile.replaceAll("'", "''")
+  const script = "$profile='" + escapedProfile + "';" +
+    'Get-CimInstance Win32_Process -Filter "Name=\'chrome.exe\' OR Name=\'msedge.exe\'" ' +
+    '| Where-Object { $_.CommandLine -like ("*" + $profile + "*") } ' +
+    '| ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }'
+  try {
+    Bun.spawnSync(['powershell.exe', '-NoProfile', '-NonInteractive',
+      '-Command', script], {stdout:'ignore',stderr:'ignore'})
+  } catch {}
+  child.kill()
 }
 
 // Real Chromium WebGPU smoke, independent CPU oracle comparison and screenshot.
@@ -56,7 +66,7 @@ async function run(){
         }catch{}
       }
       if(pageTarget)break
-      terminateHeadlessBrowser(child)
+      terminateHeadlessBrowser(child, profile)
     }catch{}
   }
   if(!pageTarget)throw new Error('No CDP-enabled Chromium / Edge browser')
@@ -153,7 +163,7 @@ try{
   console.error(summary)
   process.exitCode=1
 }finally{
-  terminateHeadlessBrowser(browser)
+  terminateHeadlessBrowser(browser, profile)
   try{rmSync(profile,{recursive:true,force:true})}catch{}
   void server.stop(true)
 }
