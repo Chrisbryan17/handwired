@@ -1,4 +1,4 @@
-import {requestStrictGpu,type GpuAllocation} from '../../../src/runtime/frontiers-device.ts'
+import {type GpuAllocation} from '../../../src/runtime/frontiers-device.ts'
 import {emitInlineCircuitWgsl} from '../../../src/runtime/webgpu-inline.ts'
 import {SpatialGridGpu} from '../../../src/runtime/frontiers-spatial-gpu.ts'
 import {type SpatialGridConfig} from '../../../src/runtime/frontiers-spatial.ts'
