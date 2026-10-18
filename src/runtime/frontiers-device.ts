@@ -23,16 +23,17 @@ export type GpuAllocation = {
 const softwarePattern = /swiftshader|llvmpipe|softpipe|software|microsoft basic render|lavapipe|cpu raster/i
 const makeIdentity = (adapter: GPUAdapter): AdapterIdentity => {
   const info = adapter.info
-  const vendor = info?.vendor ?? ''
-  const architecture = info?.architecture ?? ''
-  const description = info?.description ?? ''
-  const device = info?.device ?? ''
-  const name = [vendor, architecture, device, description].filter(Boolean).join(' / ') || 'unidentified adapter'
+  const vendor = info.vendor
+  const architecture = info.architecture
+  const description = info.description
+  const device = info.device
+  const resolvedName = [vendor, architecture, device, description].filter(v => v.length > 0).join(' / ')
+  const name = resolvedName.length > 0 ? resolvedName : 'unidentified adapter'
   return {vendor, architecture, description, device, name,
     suspectedSoftware: softwarePattern.test(name)}
 }
 export async function requestStrictGpu(label = 'Handwired Frontier'): Promise<GpuAllocation> {
-  if (typeof navigator === 'undefined' || !navigator.gpu) {
+  if (typeof navigator === 'undefined' || !('gpu' in navigator)) {
     throw new Error('WebGPU is unavailable: this demo requires browser GPU compute')
   }
   const adapter = await navigator.gpu.requestAdapter({powerPreference:'high-performance'})
@@ -55,7 +56,7 @@ export async function requestStrictGpu(label = 'Handwired Frontier'): Promise<Gp
       bytes > device.limits.maxBufferSize) {
       throw new Error('Invalid GPU buffer size: ' + bytes)
     }
-    if ((usage & GPUBufferUsage.STORAGE) !== 0 && bytes > device.limits.maxStorageBufferBindingSize) {
+    if ((usage & 128) !== 0 && bytes > device.limits.maxStorageBufferBindingSize) {
       throw new Error('Storage buffer exceeds adapter binding limit: ' + bytes)
     }
     const buffer = device.createBuffer({size: bytes, usage, label: resourceLabel})
