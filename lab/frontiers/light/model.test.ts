@@ -1,6 +1,6 @@
 import {test,expect} from 'bun:test'
 import {buildLightThroughputCircuit,cameraRay,dot,intersectScene,intersectSphere,
-  refract,reflect,schlick,random,cosineHemisphere,renderCpuPixel,tracePathCpu,
+  refract,reflect,schlick,random,cosineHemisphere,renderCpuPixel,tracePathCpu,estimateDirectLighting,
   type Ray} from './model.ts'
 test('sphere ray intersection returns exact nearest positive solution',()=>{
  const ray:Ray={origin:[0,0,0],direction:[0,0,-1]}
@@ -51,4 +51,14 @@ test('emissive rectangle is intersected before ceiling',()=>{
  expect(hit?.t).toBeCloseTo(1.365,9)
  const rgb=tracePathCpu(ray,19)
  expect(rgb[0]).toBeCloseTo(18,9)
+})
+
+test('area light contributes positive direct illumination to a visible diffuse surface',()=>{
+  const point={t:1,position:[0,-.7,-4] as const,normal:[0,1,0] as const,
+    color:[.8,.8,.8] as const,material:'diffuse' as const,
+    emission:[0,0,0] as const,frontFace:true}
+  const result=estimateDirectLighting(point,random(123))
+  expect(result[0]).toBeGreaterThan(0)
+  expect(result[1]).toBeGreaterThan(0)
+  expect(result[2]).toBeGreaterThan(0)
 })

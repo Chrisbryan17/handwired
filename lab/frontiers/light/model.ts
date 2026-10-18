@@ -144,7 +144,7 @@ export function estimateDirectLighting(hit:Hit,random01:()=>number):Vec3{
   const distance=Math.sqrt(distance2)
   const wi=scale(direction,1/distance)
   const cosSurface=Math.max(0,dot(hit.normal,wi))
-  const cosLight=Math.max(0,-wi[1])
+  const cosLight=Math.max(0,wi[1])
   if(cosSurface<=0||cosLight<=0)return [0,0,0]
   const visibility=intersectScene({origin:add(hit.position,scale(hit.normal,EPSILON*2)),direction:wi},
     EPSILON,Math.max(EPSILON,distance-EPSILON*4))
