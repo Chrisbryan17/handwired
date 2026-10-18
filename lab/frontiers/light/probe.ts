@@ -1,5 +1,6 @@
 import {LightGpuRenderer} from './solver.ts'
 import {cameraRay,tracePathCpu} from './model.ts'
+import {verifyLightGpuGeometry} from './geometry-verify.ts'
 const node=document.getElementById('result')
 const canvas=document.getElementById('scene') as HTMLCanvasElement|null
 if(canvas===null)throw new Error('light probe has no canvas')
@@ -17,8 +18,9 @@ try{
     if(intensity>0)nonzero++
     max=Math.max(max,intensity);sum+=intensity
   }
+  const geometry=await verifyLightGpuGeometry(renderer)
   const cpuSample=tracePathCpu(cameraRay(80,60,160,120),37)
-  const summary={ok:invalid===0&&nonzero>100&&max>0,
+  const summary={ok:invalid===0&&nonzero>100&&max>0&&geometry.ok,geometry,
     adapter:renderer.adapterName,samples:renderer.samplesPerPixel,
     pixels:160*120,invalid,nonzero,maxLinearRadianceSum:max,
     meanLinearRadianceSum:sum/(160*120*12),
