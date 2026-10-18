@@ -19,10 +19,12 @@ export const sphDefaults:SphSettings={
  gravity:[0,-9.81,0],min:[-7,-3,-6],max:[7,8,6],
  boundaryRestitution:.2,
 }
-export function validateSph(state:SphState,settings:SphSettings=sphDefaults){
+export function validateSph(state:SphState,settings:SphSettings=sphDefaults,
+ maxParticles=1024){
  if(state.positions.length===0||state.positions.length%4!==0||
   state.positions.length!==state.velocities.length||
-  state.positions.length/4>1024)
+  state.positions.length/4>maxParticles||
+  !Number.isSafeInteger(maxParticles)||maxParticles<1||maxParticles>131_072)
   throw new Error('invalid SPH particle arrays or reference budget')
  if(!Number.isFinite(settings.dt)||settings.dt<=0||settings.dt>.02||
   !Number.isFinite(settings.h)||settings.h<.05||settings.h>20||

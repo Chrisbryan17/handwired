@@ -181,7 +181,7 @@ export class CataclysmSphGpu {
    this.densityBind=densityBind;this.physicsBind=physicsBind
  }
  static async create(state:SphState,p:SphSettings):Promise<CataclysmSphGpu>{
-  const count=validateSph(state,p)
+  const count=validateSph(state,p,131_072)
   const cellSize=Math.max(p.h,.5)
   const dims=p.min.map((min,i)=>Math.ceil((p.max[i]!-min)/cellSize)+1)
   const spatial:SpatialGridConfig={origin:p.min,dimensions:dims as unknown as [number,number,number],
