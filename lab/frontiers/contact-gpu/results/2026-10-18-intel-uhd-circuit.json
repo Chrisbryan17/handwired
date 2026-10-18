@@ -1,0 +1,49 @@
+{
+  "ok": true,
+  "date": "2026-10-18T12:42:06.884Z",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "actualHardwareAdapter": {
+    "vendor": "intel",
+    "architecture": "gen-12lp",
+    "device": "0xa721",
+    "description": "Intel(R) UHD Graphics",
+    "isFallbackAdapter": null
+  },
+  "hardware": true,
+  "test": "GPU sphere contacts, spatial broadphase and independent CPU Jacobi physics parity",
+  "adapter": "intel / gen-12lp / 0xa721 / Intel(R) UHD Graphics",
+  "algorithm": "GPU spatial broadphase + prediction + Jacobi sphere contacts",
+  "oracle": "independently handwritten CPU impulses, restitution, friction, correction",
+  "results": [
+    {
+      "scenario": "multi-contact-plus-anchor",
+      "bodies": 6,
+      "steps": 1,
+      "contactsProcessedByCpu": 2,
+      "synchronizedMs": 5.600000023841858,
+      "readbackMs": 5.299999982118607,
+      "maxError": 1.862645149230957e-7,
+      "invalid": 0,
+      "meanError": 1.2701699840060124e-8,
+      "tolerance": 0.002,
+      "passes": true,
+      "trackedGpuBytes": 17168
+    },
+    {
+      "scenario": "64-body-gravity-and-sparse-contacts",
+      "bodies": 64,
+      "steps": 1,
+      "contactsProcessedByCpu": 1,
+      "synchronizedMs": 4.600000023841858,
+      "readbackMs": 5,
+      "maxError": 1.4901161193847656e-8,
+      "invalid": 0,
+      "meanError": 5.857145879417658e-10,
+      "tolerance": 0.002,
+      "passes": true,
+      "trackedGpuBytes": 23200
+    }
+  ],
+  "physicalGpuExpected": true,
+  "scope": "one contact solver step, not a full rigid body or robotics simulator"
+}
