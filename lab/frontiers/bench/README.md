@@ -3,6 +3,7 @@ This is deliberately a **private-to-the-build verification fixture**, not a publ
 benchmark gallery. It measures strictly identified real WebGPU adapters.
 
 - CPUs: handwritten `stepUniverseCpu` and `stepGenesisCpu` oracles;
+- Stronger Genesis CPU competitor: `reference-fast.ts`, validated against scalar oracle;
 - GPUs: exact same initial conditions, parameters, state dimensions and step counts;
 - Warm-up: 3 GPU steps, synchronization, re-upload original state;
 - GPU compute metric: host wall time from command submission through
