@@ -28,7 +28,6 @@ function displayControls(){
  print('viscosity-value',Number(viscosity.value).toFixed(2))
  print('zoom-value',Number(zoom.value).toFixed(1))
  if(viewer)viewer.distance=Number(zoom.value)
-  if(isLarge())viewer.target=[0.1,1.9,1.0]
 }
 function fail(cause:unknown){
  error.hidden=false
