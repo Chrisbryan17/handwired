@@ -67,7 +67,10 @@ try:
   points=np.asarray(entry['initial']['positions'],dtype=np.float32)
   speeds=np.asarray(entry['initial']['velocities'],dtype=np.float32)
   n=len(points)//4
-  assert len(points)==len(speeds) and n<=1024
+  assert len(points)==len(speeds) and n>0
+  # Exact CPU all-pairs comparisons are limited to 1,024. The GPU-only
+  # conservation/stability case is separately admitted up to 131,072.
+  assert n<= (131_072 if entry.get('stressOnly',False) else 1024)
   h=settings['h']
   cell_size=max(h,.5)
   mins=settings['min']
