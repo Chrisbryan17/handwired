@@ -9,7 +9,7 @@ test('Handwired proportional-derivative motor equals independent signed referenc
  for(const [q,w,target,kp,kd] of [
   [0,0,.2,20,3],[.3,-.4,-.3,12,2],[-.8,3,.1,4,8],
   [1.5,.2,-2,17,.9]
- ]){
+ ] as [number,number,number,number,number][]){
   const result=circuit.evaluateReference(Float32Array.of(q,w,target,kp,kd))[outputWires[0]!]!
   const expected=Math.fround(Math.fround(kp*Math.fround(target-q))-
    Math.fround(kd*w))
