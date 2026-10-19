@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071322">
+<meta name="description" content="Neural Machines real GPU-batched articulated dynamics: 4096 independent 2DOF legs running Handwired controller circuits with ground contact. Research slice, not trained locomotion.">
+<title>Neural Machines | Handwired Eight Frontiers</title>
+<link rel="stylesheet" href="./demo.css"></head><body><div class="shell">
+<header class="top"><a class="brand" href="../frontiers/"><span class="sigil">✳</span> HANDWIRED <span class="muted">/ EIGHT FRONTIERS</span></a>
+<div class="chip"><span class="led"></span><span id="gpu-status">WAITING FOR WEBGPU</span></div>
+<a class="source" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontier-08-machines/lab/frontiers/machines">SOURCE ↗</a></header>
+<main class="workspace">
+<aside class="controls">
+<div class="eyebrow">08 / PARALLEL ARTICULATED DYNAMICS</div>
+<h1>Neural<br><em>Machines.</em></h1>
+<p class="intro">Thousands of independent two-joint mechanical legs. Physical inertia, gravity, Coriolis effects, contact forces and Handwired-generated motor circuits execute on the GPU.</p>
+<div class="boundary"><b>NOT A TRAINED WALKING ROBOT</b> These are fixed-hip 2DOF leg rigs with programmed feedback. No free-body walking, quadrupeds, reinforcement learning or sim-to-real claim.</div>
+<div class="rule"></div>
+<label for="population">Simulated articulated environments</label>
+<select id="population">
+<option value="64">64 independent rigs / detail</option>
+<option value="256">256 parallel rigs / ensemble</option>
+<option value="4096">4,096 real GPU physics environments</option>
+</select>
+<label for="target-hip">Hip motor target <output id="target-hip-value">0.15</output></label>
+<input id="target-hip" type="range" min="-1" max="1" value=".15" step=".05">
+<label for="target-knee">Knee motor target <output id="target-knee-value">-0.35</output></label>
+<input id="target-knee" type="range" min="-1.2" max=".5" value="-.35" step=".05">
+<label for="kp">Proportional gain <output id="kp-value">16.0</output></label>
+<input id="kp" type="range" min="0" max="48" value="16" step="1">
+<label for="kd">Derivative damping <output id="kd-value">2.5</output></label>
+<input id="kd" type="range" min="0" max="12" value="2.5" step=".5">
+<label for="gravity">Gravity <output id="gravity-value">9.8</output></label>
+<input id="gravity" type="range" min="0" max="20" value="9.81" step=".1">
+<label for="zoom">Camera distance <output id="zoom-value">28</output></label>
+<input id="zoom" type="range" min="10" max="330" value="28" step="1">
+<div class="actions"><button id="pause">Pause</button><button class="alt" id="reset">Restart experiment</button></div>
+<button class="verify" id="verify">Check live GPU against independent CPU ↗</button>
+<p class="footnote">Drag the scene to orbit. Altering a control recreates a deterministic physical experiment. Joint-angle buffers remain on GPU during rendering; state is read back only for the explicit independent physics check.</p>
+</aside>
+<section class="stage"><canvas id="scene" width="900" height="620" aria-label="3D array of dynamically simulated, joint-coupled articulated robotics legs"></canvas>
+<div class="stage-meta top-left"><span class="led"></span> REAL 2DOF DYNAMICS / HANDWIRED MOTOR CIRCUIT</div>
+<div class="stage-meta top-right">LIVE GPU JOINT STATES / 3D ARTICULATED GEOMETRY</div>
+<div class="stage-meta bottom-left">FEEDBACK CONTROL · NOT REINFORCEMENT LEARNING</div>
+<div class="stage-meta bottom-right">PINNED-HIP SLICES · 2 DOF EACH</div>
+<div id="error" role="alert" hidden></div></section>
+<aside class="telemetry"><div class="eyebrow">COMPUTATIONAL TELEMETRY</div>
+<div class="metric"><span>Independent leg environments</span><strong id="count">—</strong><small>2 REVOLUTE JOINTS EACH</small></div>
+<div class="metric"><span>Mechanical degrees of freedom</span><strong id="degrees">—</strong></div>
+<div class="metric"><span>GPU physics updates</span><strong id="steps">0</strong></div>
+<div class="metric"><span>Simulation time</span><strong id="model-time">0.00</strong><small>MODEL SECONDS</small></div>
+<div class="metric"><span>Screen updates</span><strong id="fps">—</strong><small>NOT GPU KERNEL TIMINGS</small></div>
+<div class="metric"><span>Tracked GPU allocations</span><strong id="memory">—</strong><small>KiB / NOT TOTAL VRAM</small></div>
+<div class="eyebrow lower">ACTUAL ADAPTER</div><p id="adapter">Requesting physical device…</p>
+<div class="eyebrow lower">NUMERICAL DIFFERENTIAL</div><p id="verification">Check the next GPU physics update against the independent coupled-inertia and ground-contact CPU solver.</p>
+<div class="eyebrow lower">RESEARCH BOUNDARY</div><p>Feedback-controlled pinned planar legs. No trained agent populations, locomotion, balance, trunk translation or humanoid actuation yet.</p>
+</aside></main>
+<footer><span>HANDWIRED / MIT RESEARCH / REAL NUMERICAL PHYSICS</span><a href="../frontiers/">EIGHT FRONTIERS GALLERY ↗</a></footer>
+</div><script type="module" src="./demo.ts"></script></body></html>
