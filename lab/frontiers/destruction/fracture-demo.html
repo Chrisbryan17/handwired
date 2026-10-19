@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070e1c">
+<meta name="description" content="Handwired Neural Destruction research: GPU-computed bond forces and fracture triggered by real strain and impacts.">
+<title>Neural Destruction — Cohesive Fracture | Handwired</title>
+<link rel="stylesheet" href="./demo.css"></head><body><div class="shell">
+<header class="top"><a class="brand" href="../frontiers/"><span class="sigil">✳</span> HANDWIRED <span class="muted">/ EIGHT FRONTIERS</span></a>
+<div class="chip"><span class="led"></span><span id="gpu-status">INITIALIZING WEBGPU</span></div>
+<a class="source" href="https://github.com/Chrisbryan17/handwired/tree/feat/frontier-06-destruction/lab/frontiers/destruction">SOURCE ↗</a></header>
+<main class="workspace"><aside class="controls">
+<div class="eyebrow">06 / COMPUTATIONAL FRACTURE MECHANICS</div>
+<h1>Neural<br><em>Destruction.</em></h1>
+<p class="intro">A bonded three-dimensional structure that deforms, accumulates strain damage and separates under simulated impacts. Every beam reads the live GPU bond state.</p>
+<div class="boundary"><b>SCIENTIFIC LIMIT</b> Cohesive spring lattice with irreversible bond damage. Not FEM, certified engineering predictions, volumetric crack propagation or physically simulated flying shards.</div>
+<div class="rule"></div>
+<label for="structure">Structural mesh</label><select id="structure"><option value="standard">Bridge lattice / 14 sections</option><option value="dense">Dense bridge / 24 sections</option><option value="compact">Compact bridge / 8 sections</option></select>
+<label for="gravity">Gravity <output id="gravity-value">9.81</output></label><input id="gravity" type="range" min="0" max="18" value="9.81" step=".1">
+<label for="strength">Relative failure strain <output id="strength-value">1.00×</output></label><input id="strength" type="range" min=".45" max="2" value="1" step=".05">
+<label for="camera-distance">Camera distance <output id="zoom-value">13</output></label><input id="camera-distance" type="range" min="7" max="35" value="13" step=".5">
+<div class="rule"></div><div class="eyebrow">APPLY REAL GPU IMPULSE</div>
+<div class="actions"><button id="strike-left">Left</button><button id="strike-center">Center</button><button id="strike-right">Right</button></div>
+<div class="actions"><button id="pause" class="alt">Pause</button><button id="restart" class="alt">Rebuild structure</button></div>
+<button id="verify" class="verify">Verify one live GPU step against CPU ↗</button>
+<p class="footnote">Drag to orbit. Impacts modify GPU-resident velocity directly. The red tint represents cumulative bond damage; broken links disappear because their actual GPU fracture state is zero.</p>
+</aside>
+<section class="stage"><canvas id="scene" width="900" height="620" aria-label="Physically simulated bridge bonds, strained and fractured on the GPU"></canvas>
+<div class="stage-meta top-left"><span class="led"></span> LIVE BOND STRESS / HANDWIRED GPU</div>
+<div class="stage-meta top-right">GLOWING COHESIVE STRUTS / REAL COMPUTATION</div>
+<div class="stage-meta bottom-left">STRAIN-TRIGGERED BREAKAGE · NEVER SCRIPTED TIMELINES</div>
+<div class="stage-meta bottom-right">COHESIVE LATTICE · NOT CONTINUUM FEM</div>
+<div id="error" role="alert" hidden></div>
+</section>
+<aside class="telemetry"><div class="eyebrow">REAL-TIME NUMERICS</div>
+<div class="metric"><span>Nodes / constrained bodies</span><strong id="node-count">—</strong></div>
+<div class="metric"><span>Simulated bonds</span><strong id="bond-count">—</strong></div>
+<div class="metric"><span>GPU physics steps</span><strong id="step-count">0</strong></div>
+<div class="metric"><span>Screen refresh</span><strong id="fps">—</strong><small>NOT COMPUTE KERNEL LATENCY</small></div>
+<div class="metric"><span>GPU allocated memory</span><strong id="memory">—</strong><small>KiB · NOT TOTAL VRAM</small></div>
+<div class="eyebrow lower">ADAPTER IDENTITY</div><p id="adapter">Detecting supported GPU…</p>
+<div class="eyebrow lower">INDEPENDENT REFERENCE</div><p id="verification">Use Verify to check actual GPU forces, node integration and broken bond flags against the CPU reference.</p>
+</aside></main>
+<footer><span>HANDWIRED / ENGINEERING RESEARCH PREVIEW / MIT OPEN SOURCE</span>
+<a href="../frontiers/">EIGHT FRONTIERS GALLERY ↗</a></footer>
+</div><script type="module" src="./fracture-demo.ts"></script></body></html>
