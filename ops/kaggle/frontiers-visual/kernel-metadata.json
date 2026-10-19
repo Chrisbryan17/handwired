@@ -1,0 +1,14 @@
+{
+  "id": "chrisbryan17/handwired-frontiers-visual-hardware",
+  "title": "Handwired Frontiers Visual Hardware Gate",
+  "code_file": "visual.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "enable_tpu": false,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
