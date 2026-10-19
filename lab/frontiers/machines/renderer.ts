@@ -55,7 +55,7 @@ export class MachinesRenderer {
    const pipelineLayout=device.createPipelineLayout({bindGroupLayouts:[layout]})
    const pipeline=async(entryPoint:string)=>device.createRenderPipelineAsync({
     layout:pipelineLayout,vertex:{module:shader,entryPoint},
-    fragment:{module:shader,entryPoint:'fragment',targets:[{format}]},
+    fragment:{module:shader,entryPoint:'shadeMachine',targets:[{format}]},
     primitive:{topology:'triangle-list',cullMode:'none'},
     depthStencil:{format:'depth24plus',depthWriteEnabled:true,depthCompare:'less'},
    })

@@ -115,7 +115,7 @@ fn project(p:vec3<f32>)->vec4<f32>{
  out.world=world;
  return out;
 }
-@fragment fn fragment(inp:Out)->@location(0) vec4<f32>{
+@fragment fn shadeMachine(inp:Out)->@location(0) vec4<f32>{
  let n=normalize(inp.normal);
  let light=normalize(vec3<f32>(-.55,.88,.58));
  let lambert=max(0.0,dot(n,light));
