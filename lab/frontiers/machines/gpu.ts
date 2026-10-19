@@ -33,12 +33,19 @@ fn advanceLegs(@builtin(global_invocation_id) tid:vec3<u32>){
  let i=tid.x;
  if(i>=p.count){return;}
  let s=current[i];
- let q1=s.x,q2=s.y,w1=s.z,w2=s.w;
- let l1=p.geometry.x,l2=p.geometry.y;
- let m1=p.geometry.z,m2=p.geometry.w;
+ let q1=s.x;
+ let q2=s.y;
+ let w1=s.z;
+ let w2=s.w;
+ let l1=p.geometry.x;
+ let l2=p.geometry.y;
+ let m1=p.geometry.z;
+ let m2=p.geometry.w;
  let angle=q1+q2;
- let s1=sin(q1),c1=cos(q1);
- let sa=sin(angle),ca=cos(angle);
+ let s1=sin(q1);
+ let c1=cos(q1);
+ let sa=sin(angle);
+ let ca=cos(angle);
  let footY=p.physical.y-l1*c1-l2*ca;
  let jx1=l1*c1+l2*ca;
  let jx2=l2*ca;
