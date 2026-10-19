@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "backend": "wgpu-native/Vulkan",
+  "browserWebGpuVerified": false,
+  "controller": "Real Handwired-generated PD circuit, not a learned policy",
+  "physics": "Coupled 2DOF Euler-Lagrange leg inertia + ground penalty contact",
+  "results": [
+    {
+      "name": "64-two-joint-contact",
+      "environments": 64,
+      "steps": 1,
+      "actualJointStates": 256,
+      "ok": true,
+      "maxError": 7.450580596923828e-8,
+      "meanError": 1.0540190942265326e-8,
+      "nonfinite": 0,
+      "peakAngularSpeed": 0.2589299976825714,
+      "synchronizedSetupSubmitAndReadbackMs": 272.734
+    },
+    {
+      "name": "256-feedback-controlled-legs",
+      "environments": 256,
+      "steps": 24,
+      "actualJointStates": 1024,
+      "ok": true,
+      "maxError": 4.172325134277344e-7,
+      "meanError": 4.5864794628869276e-8,
+      "nonfinite": 0,
+      "peakAngularSpeed": 1.362736701965332,
+      "synchronizedSetupSubmitAndReadbackMs": 2.578
+    },
+    {
+      "name": "4096-parallel-articulated-environments",
+      "environments": 4096,
+      "steps": 64,
+      "actualJointStates": 16384,
+      "ok": true,
+      "maxError": 0.0000011324882507324219,
+      "meanError": 4.8855039125328403e-8,
+      "nonfinite": 0,
+      "peakAngularSpeed": 1.5204546451568604,
+      "synchronizedSetupSubmitAndReadbackMs": 8.768
+    }
+  ],
+  "started": "2026-10-19T02:41:47Z",
+  "visibleAdapters": [
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='', architecture='', device='Tesla T4/PCIe/SSE2', description='3.3.0 NVIDIA 580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=0, adapter_type='Unknown', backend_type='OpenGL'>"
+  ],
+  "executingAdapter": "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+  "wgslSha256": "60a19c8dc49d9cfffc561b0b70ed1483e04eef2d10e2e11757ee404617cb2709",
+  "tolerance": 0.018,
+  "limitations": "Pinned hip, penalty foot force, feedback motors; no 3D free-base gait or RL training",
+  "finished": "2026-10-19T02:41:48Z"
+}

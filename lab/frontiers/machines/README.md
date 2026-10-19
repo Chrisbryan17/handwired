@@ -6,9 +6,10 @@ independently computed coupled Euler–Lagrange inertia, Coriolis terms,
 gravity, capped PD motor torque, joint damping and penalty-based
 normal/tangential foot contact.
 
-**Current evidence: CPU reference and tests only.** GPU implementation,
-hardware parity, visual locomotion, articulated free-body dynamics
-and policy optimization have not yet been verified.
+**Current evidence: independent CPU tests and real NVIDIA Tesla T4
+native Vulkan verification of actual GPU 2DOF mechanics and Handwired
+motor circuits.** Browser hardware rendering, full locomotion,
+free-body physics and learning remain unverified.
 
 ## Differential equations
 
@@ -69,3 +70,27 @@ not a claim of locomotion training or free-body multilegged physics.
 Strict TypeScript/lint and the native hardware CPU/GPU
 differential remain required gates. Compilation alone is not
 a real hardware pass.
+
+## Physical NVIDIA GPU verification — 2026-10-18 (Jamaica)
+
+The actual Handwired-generated controller WGSL and 2DOF dynamics
+were dispatched through `wgpu-native` on a **physical Tesla T4
+Vulkan device** (driver 580.178.04). Full joint-position and
+joint-velocity arrays were compared with independent CPU dynamics
+after synchronization:
+
+| Scenario | Legs | Physics updates | Maximum absolute error | Invalid values |
+|---|---:|---:|---:|---:|
+| Ground contact | 64 | 1 | 7.451e-8 | 0 |
+| Feedback control | 256 | 24 | 4.172e-7 | 0 |
+| Batched dynamics | 4,096 | 64 | 1.132e-6 | 0 |
+
+All pass. The original machine-readable
+[hardware evidence](results/2026-10-18-tesla-t4-4096-articulated.json)
+records the adapter, tolerance, shader hash and CPU-parity metrics.
+The elapsed intervals include setup/host command submission and
+readback and must **not** be described as pure GPU kernel timings.
+
+This validates real batched GPU physical computation for those
+scenarios, **not Chromium browser GPU execution** and not a trained
+robotics policy. Nothing is yet publicly deployed.
