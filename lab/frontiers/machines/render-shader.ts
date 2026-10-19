@@ -5,7 +5,7 @@ export const legPopulationRenderWgsl=`
 struct View {
  right:vec4<f32>,up:vec4<f32>,forward:vec4<f32>,
  eye:vec4<f32>,projection:vec4<f32>,
- layout:vec4<f32>,geometry:vec4<f32>,
+ gridLayout:vec4<f32>,geometry:vec4<f32>,
 };
 @group(0) @binding(0) var<storage,read> joints:array<vec4<f32>>;
 @group(0) @binding(1) var<uniform> view:View;
@@ -17,13 +17,13 @@ struct Out {
 };
 const PI:f32=3.141592653589793;
 fn root(i:u32)->vec3<f32>{
- let width=u32(view.layout.x);
+ let width=u32(view.gridLayout.x);
  let column=f32(i%width);
  let row=f32(i/width);
  return vec3<f32>(
-  (column-(view.layout.x-1.0)*.5)*view.layout.z,
+  (column-(view.gridLayout.x-1.0)*.5)*view.gridLayout.z,
   view.geometry.z,
-  (row-(view.layout.y-1.0)*.5)*view.layout.z);
+  (row-(view.gridLayout.y-1.0)*.5)*view.gridLayout.z);
 }
 fn nodes(i:u32)->array<vec3<f32>,3>{
  let state=joints[i];
@@ -103,14 +103,14 @@ fn project(p:vec3<f32>)->vec4<f32>{
   vec2<f32>(-1.0,1.0),vec2<f32>(1.0,1.0));
  let q=corners[v];
  let world=vec3<f32>(
-  q.x*(view.layout.x*view.layout.z*.53),
-  view.layout.w-.01,
-  q.y*(view.layout.y*view.layout.z*.53));
+  q.x*(view.gridLayout.x*view.gridLayout.z*.53),
+  view.gridLayout.w-.01,
+  q.y*(view.gridLayout.y*view.gridLayout.z*.53));
  var out:Out;
  out.clip=project(world);
  out.normal=vec3<f32>(0.0,1.0,0.0);
- let checker=(i32(floor(world.x/view.layout.z))+
-  i32(floor(world.z/view.layout.z)))&1;
+ let checker=(i32(floor(world.x/view.gridLayout.z))+
+  i32(floor(world.z/view.gridLayout.z)))&1;
  out.tint=select(vec3<f32>(.038,.094,.15),vec3<f32>(.062,.13,.20),checker==1);
  out.world=world;
  return out;
