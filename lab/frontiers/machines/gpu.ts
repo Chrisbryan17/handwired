@@ -21,9 +21,9 @@ struct Parameters {
 @group(0) @binding(1) var<storage,read_write> next:array<vec4<f32>>;
 @group(0) @binding(2) var<uniform> p:Parameters;
 `+emitInlineCircuitWgsl(controller.circuit,controller.outputWires,'handwiredLegMotor')+`
-fn motor(q:f32,w:f32,target:f32)->f32 {
+fn motor(q:f32,w:f32,desired:f32)->f32 {
  var input:array<f32,5>;
- input[0u]=q;input[1u]=w;input[2u]=target;
+ input[0u]=q;input[1u]=w;input[2u]=desired;
  input[3u]=p.control.x;input[4u]=p.control.y;
  let generated=handwiredLegMotor(input);
  return clamp(generated[0u],-p.control.z,p.control.z);
