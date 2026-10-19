@@ -55,3 +55,17 @@ on independent initial conditions, 4,096+ controller instances,
 real hardware adapter and timing evidence, 3D visualization,
 free-body motion, continuous contact, articulated multi-leg
 constraints, gait training and reproducible replay.
+
+## GPU batched 2DOF model added (hardware acceptance pending)
+
+`gpu.ts` uses the same exact articulated two-link mass matrix and
+contact penalty model as the independent CPU solver, compiled into
+a real WGSL compute pass. A Handwired-generated PD motor circuit
+is invoked for each joint on every simulated robot. GPU storage
+is ping-ponged between steps; no CPU uploads/readbacks during
+regular simulation. The per-environment calculation is parallel,
+not a claim of locomotion training or free-body multilegged physics.
+
+Strict TypeScript/lint and the native hardware CPU/GPU
+differential remain required gates. Compilation alone is not
+a real hardware pass.
