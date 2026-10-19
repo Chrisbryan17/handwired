@@ -1,9 +1,10 @@
 # Neural Destruction — cohesive fracture computational research
 
-Current integration gate: **CPU VERIFIED** plus GPU structural implementation,
-TypeScript and bundler checks. The structural GPU-specific numerical and
-browser visual verification gates are **OPEN**. No public fracture demo is
-represented as complete or hardware verified until those pass.
+Current integration gate: **CPU VERIFIED and NVIDIA Tesla T4 native Vulkan
+hardware verified** for three bounded 3D structural scenarios. Browser
+hardware execution, visual QA, stability over longer horizons and
+public deployment remain **OPEN**. This is not a certified engineering
+fracture model or a finished Neural Destruction release.
 
 ## Computational basis
 
@@ -69,6 +70,32 @@ orbit camera. Strain damage changes beam color; severed bonds are no
 longer drawn. The browser experience `fracture-demo.html` has
 material-strength and gravity controls, several mesh resolutions and a
 live CPU/GPU state comparison button.
+
+## Real NVIDIA hardware verification — 2026-10-18
+
+The actual `bondedForceWgsl` and Handwired-compiled `bondedIntegrateWgsl`
+were exported unchanged from the feature branch and dispatched on a
+**physical NVIDIA Tesla T4** Vulkan adapter through `wgpu-native`.
+Both GPU positions/velocities and irreversible bond damage were
+compared against the independent CPU Hookean/Kelvin–Voigt oracle.
+
+| Case | Nodes / bonds | Steps | Broken bonds | Max velocity error | Bond-state mismatches |
+|---|---|---:|---:|---:|---:|
+| Elastic loading | 36 / 107 | 1 | 0 | 1.793e-8 | 0 |
+| Critical fracture | 36 / 107 | 1 | 5 | 1.793e-8 | 0 |
+| Damped gravity | 36 / 107 | 10 | 0 | 2.384e-7 | 0 |
+
+The hardware run passed all cases without nonfinite values. Recorded
+evidence: [Tesla T4 fracture JSON](../lab/frontiers/destruction/results/2026-10-18-tesla-t4-native-fracture.json).
+These numbers establish only the tested 36-node small-graph cases, not
+general numerical convergence or strength validation. The reported
+wall-clock intervals include pipeline creation and diagnostic readback
+and are **not GPU kernel-only benchmarks**.
+
+Browser WebGPU execution was **not** used on Kaggle; the original
+Chromium T4 attempt selected SwiftShader and was correctly rejected.
+Actual browser screenshot inspection and responsive control QA remain
+outstanding.
 
 ## Hardware acceptance
 
