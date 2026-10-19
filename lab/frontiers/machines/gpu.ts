@@ -143,6 +143,11 @@ export class BatchedLegsGpu {
     [binding(a,b),binding(b,a)])
   }catch(e){gpu.dispose();throw e}
  }
+ get renderJointBuffers():readonly [GPUBuffer,GPUBuffer]{
+  this.ensure()
+  return this.buffers
+ }
+ get activeIndex(){return this.active}
  get steps(){return this.ticks}
  get residentJointBuffer(){
   this.ensure()
