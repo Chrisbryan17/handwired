@@ -54,6 +54,9 @@ jobs:
           if [ -f lab/frontiers/spatial/tsconfig.json ]; then
             bunx tsc -p lab/frontiers/spatial/tsconfig.json --pretty false
           fi
+          if [ -f lab/frontiers/destruction/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/destruction/tsconfig.json --pretty false
+          fi
           bunx tsc -p . --pretty false
       - name: Type-aware lint
         run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts src/runtime/frontiers-contacts.ts src/runtime/frontiers-contacts.test.ts src/runtime/frontiers-contacts-gpu.ts lab/frontiers
@@ -61,6 +64,7 @@ jobs:
         run: |
           bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
           bun run site:build
+          bun build lab/frontiers/destruction/fracture-demo.html --outdir /tmp/handwired-fracture-candidate
       - name: Upload static build for inspection
         uses: actions/upload-artifact@v4
         with:

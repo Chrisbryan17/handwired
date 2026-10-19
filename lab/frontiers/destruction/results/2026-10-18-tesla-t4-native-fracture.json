@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "backend": "wgpu-native/Vulkan",
+  "browserWebGpuVerified": false,
+  "model": "3D cohesive Hookean bonded graph with irreversible failure",
+  "cases": [
+    {
+      "name": "36-node-elastic-strain",
+      "nodes": 36,
+      "bonds": 107,
+      "steps": 1,
+      "errors": {
+        "positions": 0.0,
+        "velocities": 1.7927469286860287e-08,
+        "damage": 0.0
+      },
+      "activeMismatches": 0,
+      "brokenBonds": 0,
+      "referenceBroken": 0,
+      "nonfinite": 0,
+      "elapsedMsIncludesSetupAndReadback": 269.66,
+      "ok": true
+    },
+    {
+      "name": "true-critical-strain-fracture",
+      "nodes": 36,
+      "bonds": 107,
+      "steps": 1,
+      "errors": {
+        "positions": 0.0,
+        "velocities": 1.7927469286860287e-08,
+        "damage": 1.4901161193847656e-08
+      },
+      "activeMismatches": 0,
+      "brokenBonds": 5,
+      "referenceBroken": 5,
+      "nonfinite": 0,
+      "elapsedMsIncludesSetupAndReadback": 2.96,
+      "ok": true
+    },
+    {
+      "name": "10-steps-damped-gravity",
+      "nodes": 36,
+      "bonds": 107,
+      "steps": 10,
+      "errors": {
+        "positions": 0.0,
+        "velocities": 2.384185791015625e-07,
+        "damage": 0.0
+      },
+      "activeMismatches": 0,
+      "brokenBonds": 0,
+      "referenceBroken": 0,
+      "nonfinite": 0,
+      "elapsedMsIncludesSetupAndReadback": 3.64,
+      "ok": true
+    }
+  ],
+  "started": "2026-10-19T02:18:21Z",
+  "adapters": [
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='', architecture='', device='Tesla T4/PCIe/SSE2', description='3.3.0 NVIDIA 580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=0, adapter_type='Unknown', backend_type='OpenGL'>"
+  ],
+  "executingAdapter": "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+  "wgslSha256": {
+    "fracture-bond-forces": "c918258494b9fa51424fa5a994b6dfc9aba1cd1849a1a151019e6309ceb92e00",
+    "fracture-handwired-node": "6460ad0269dcf9151c3ad03cfcbcbd3267bdf23344f33ea99e996d83a1c6facf"
+  },
+  "tolerances": {
+    "positions": 0.009,
+    "velocities": 0.009,
+    "damage": 0.009
+  },
+  "boundaries": "Discrete spring network, not FEM or material-certified fracture",
+  "finished": "2026-10-19T02:18:23Z"
+}
