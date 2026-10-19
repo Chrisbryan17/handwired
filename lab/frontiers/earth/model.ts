@@ -31,7 +31,7 @@ const defaultSpeed:Record<string,number>={
  residential:8,unclassified:8,living_street:4,service:5
 }
 export function parseOsmRoads(data:OsmData):KingstonRoadGraph{
- if(!data||!Array.isArray(data.elements)||data.elements.length>150_000)
+ if(!Array.isArray(data.elements)||data.elements.length>150_000)
   throw Error('OSM road dataset invalid or too large')
  const nodes=new Map<number,[number,number]>()
  const adjacency=new Map<number,RoadEdge[]>()
@@ -45,11 +45,11 @@ export function parseOsmRoads(data:OsmData):KingstonRoadGraph{
  const add=(e:RoadEdge)=>{const list=adjacency.get(e.from)??[];list.push(e);adjacency.set(e.from,list)}
  for(const x of data.elements)if(x.type==='way'){
   const kind=x.tags?.['highway']
-  if(!kind||!(kind in defaultSpeed)||x.nodes.length<2)continue
+  if(kind===undefined||!(kind in defaultSpeed)||x.nodes.length<2)continue
   if(!Number.isSafeInteger(x.id))throw Error('invalid OSM road way id')
   let speed=defaultSpeed[kind]!
   const maxspeed=x.tags?.['maxspeed']
-  if(maxspeed){
+  if(maxspeed!==undefined){
    const match=/^(\d{1,3})(?:\s*km\/h)?$/.exec(maxspeed.trim())
    if(match)speed=Math.min(140,Math.max(2,Number(match[1])))/3.6
   }
@@ -57,9 +57,9 @@ export function parseOsmRoads(data:OsmData):KingstonRoadGraph{
    x.tags?.['oneway']==='yes'||x.tags?.['junction']==='roundabout'?1:0
   for(let i=1;i<x.nodes.length;i++){
    const a=x.nodes[i-1]!,b=x.nodes[i]!,pa=nodes.get(a),pb=nodes.get(b)
-   if(!pa||!pb||a===b)continue
+   if(pa===undefined||pb===undefined||a===b)continue
    const meters=haversine(pa,pb)
-   if(!(meters>0)&&Number.isFinite(meters))continue
+   if(meters<=0)continue
    if(!Number.isFinite(meters)||meters>10000)throw Error('invalid OSM road segment length')
    const edge={from:a,to:b,meters,maxMetersPerSecond:speed,roadType:kind,osmWay:x.id}
    if(direction>=0)add(edge)
