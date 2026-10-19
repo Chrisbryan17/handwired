@@ -42,14 +42,16 @@ try{
    const actual=await gpu.readState()
    const readbackMs=performance.now()-readback
    let invalid=0,maxError=0,meanError=0
-   const expected=[cpu.state.positions,cpu.state.velocities]
-   const observed=[actual.positions,actual.velocities]
-   for(let k=0;k<2;k++)for(let i=0;i<expected[k]!.length;i++){
-    const value=observed[k]![i]!
-    if(!Number.isFinite(value))invalid++
-    const error=Math.abs(value-expected[k]![i]!)
-    maxError=Math.max(maxError,error)
-    meanError+=error
+   for(const field of ['positions','velocities'] as const){
+    const reference=cpu.state[field],observed=actual[field]
+    for(let i=0;i<reference.length;i++){
+     const value=observed[i]??Number.NaN
+     const target=reference[i]??Number.NaN
+     if(!Number.isFinite(value)||!Number.isFinite(target))invalid++
+     const error=Math.abs(value-target)
+     maxError=Math.max(maxError,error)
+     meanError+=error
+    }
    }
    results.push({scenario:scenario.name,bodies:scenario.body.positions.length/4,
      steps:gpu.steps,contactsProcessedByCpu:cpu.contactsProcessed,
