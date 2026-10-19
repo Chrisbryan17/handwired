@@ -1,24 +1,78 @@
-# Eight Frontiers — engineering ledger
-Baseline: `main` at `9c3ac7d44a470d03536cedaaefea167cd71eb2b1` (2026-10-17).
-GitHub Pages baseline includes Swarm, Maze, Cloth, Fluid and a benchmark route.
-Do not rewrite prior evidence; require fresh tests for new code.
+# Eight Frontiers — living engineering ledger
+Verified checkpoint: 2026-10-18 Jamaica time; `main` at
+`e313d9f084d62d0beca1fb1dc28d2eb072e6ecab`.
+Source of truth for a workstream is its exact feature-branch commit
+and attached real test evidence, not historical status notes.
 
-## Gate semantics
-`BACKLOG → ARCHITECTURE → IMPLEMENTATION → CPU VERIFIED → GPU VERIFIED → VISUAL QA → BENCHMARKED → PUBLISHED`.
-A gate applies only to functionality demonstrated by evidence. A vertical slice is not the full scope.
-A passing CPU test cannot establish GPU hardware support; a browser load cannot establish scientific correctness.
+## Kanban gate semantics
 
-| Workstream | Branch | Gate at initial baseline | Dependency / first vertical slice |
+`BACKLOG → ARCHITECTURE → IMPLEMENTATION → CPU VERIFIED → GPU VERIFIED → VISUAL QA → BENCHMARKED → PUBLISHED`
+
+Gates below apply to **specific functional slices** unless stated;
+no whole frontier is finished. A real browser page is not proof of
+scientific accuracy or GPU hardware execution. NVIDIA native
+`wgpu-native/Vulkan` compute is hardware execution but not browser
+WebGPU certification.
+
+| Workstream | Verified vertical-slice gate | Production/publication boundary | Next hard blocker |
 | --- | --- | --- | --- |
-| 01 Earth | `feat/frontier-01-earth` | ARCHITECTURE | OSM ingestion and urban road graph; GPU agent state |
-| 02 Cataclysm | `feat/frontier-02-cataclysm` | ARCHITECTURE | Shared grid and 3D viewport; actual shallow-water / 3D particle solver |
-| 03 Genesis | `feat/frontier-03-genesis` | VISUAL QA (reaction–diffusion vertical slice only) | GPU field update, deterministic CA first; learning/evolution separate |
-| 04 Universe | `feat/frontier-04-universe` | VISUAL QA (256-body vertical slice only; full scope open) | Real softened pairwise N-body gravity, Handwired integration |
-| 05 Reality | `feat/frontier-05-reality` | ARCHITECTURE | Input/pose pipeline, scene assets, splat viewer; training offline |
-| 06 Destruction | `feat/frontier-06-destruction` | ARCHITECTURE | Collision/contact, constraint graph, energy-aware fracture |
-| 07 Light | `feat/frontier-07-light` | GPU VERIFIED + visual QA (limited primitive scene, not full scope) | Actual ray-BVH traversal, unbiased estimator, material sampling |
-| 08 Machines | `feat/frontier-08-machines` | ARCHITECTURE | Articulated physics reference + GPU batched control |
-| Shared platform | `feat/frontiers-platform-20261017` | IMPLEMENTATION | strict device selection, GPU lifecycle, instrumentation, viewer |
+| **01 Neural Earth** | ARCHITECTURE | No validated Kingston 3D agent twin yet | Real licensed road/building/elevation data, routing and GPU agents |
+| **02 Neural Cataclysm** | **GPU VERIFIED (native NVIDIA Tesla T4; WCSPH slice)** | Interactive 3D candidate on `feat/frontier-02-cataclysm`; *not published* | Real Chromium hardware screenshot QA, stability, surface reconstruction and tsunami coast model |
+| **03 Neural Genesis** | PUBLISHED (limited cellular/reaction–diffusion slice) | [Browser](../neural-genesis/) exists via Pages route; morphology/evolution are incomplete | True mutation/selection/training beyond deterministic field rules |
+| **04 Neural Universe** | PUBLISHED (limited 256-body pairwise gravity slice) | [Browser](../neural-universe/) exists via Pages route; no millions-body gravity claim | Barnes–Hut, energy checks, scalability and colliding galaxy complexity |
+| **05 Neural Reality** | ARCHITECTURE | No reproducible input-to-reconstruction pipeline yet | COLMAP/SfM workflow, licensed images, splat training and viewer |
+| **06 Neural Destruction** | **GPU VERIFIED (native NVIDIA Tesla T4; bonded fracture slice)** | Interactive candidate in `feat/frontier-06-destruction`; *not published* | Actual browser visuals/QA, structural stability, rigid-shape contact and fracture/debris coupling |
+| **07 Neural Light** | PUBLISHED (limited physically traced scene) | [Browser](../neural-light/) and desktop/mobile hardware evidence; full PBR scope open | Acceleration BVH/MIS/GGX, convergence and complex objects |
+| **08 Neural Machines** | CPU VERIFIED (2DOF leg slice); GPU candidate committed | `feat/frontier-08-machines`, private GPU test submitted; *not published* | Physical T4 differential run, free-floating articulated contact and actual gait training |
+| **Shared GPU physics** | GPU VERIFIED (Intel Gen-12LP sphere contacts + 3D grid) | Merged by [PR #14](https://github.com/Chrisbryan17/handwired/pull/14) | Long-run stability and dense-contact convergence |
+
+## Current verifiable checkpoints
+
+- **Cataclysm:** Actual NVIDIA Tesla T4 native Vulkan execution of
+  GPU linked-cell SPH, density, Handwired-generated pressure,
+  viscosity and boundary dynamics. 64/80/120-body independent
+  CPU comparisons passed; a separate 18,432-particle, 32-step
+  GPU-only conservation test passed. Original raw
+  [small/large report](../lab/frontiers/cataclysm/results/2026-10-18-tesla-t4-18432-sph-stress.json)
+  lives in the feature branch, not `main`.
+  That large run does not prove per-particle CPU parity at 18,432.
+- **Destruction:** Actual NVIDIA Tesla T4 native Vulkan verified
+  36-node/107-bond graph with physical 5-bond critical fracture,
+  zero bond-state mismatches and small velocity residuals.
+  [Evidence](../lab/frontiers/destruction/results/2026-10-18-tesla-t4-native-fracture.json)
+  is on the feature branch only; full 3D browser visual gate remains open.
+- **Shared contact:** Actual Intel UHD Gen-12LP browser WebGPU
+  one-step differential passed for 6 and 64 spheres and compiler-generated
+  Handwired impulse arithmetic. This source and
+  [evidence](../lab/frontiers/contact-gpu/results/2026-10-18-intel-uhd-circuit.json)
+  are now on `main`.
+- **Machines:** CPU Lagrangian two-joint solver with joint inertia
+  coupling, ground penalty force and deterministic Handwired PD
+  controller passed focused tests. GPU-batched kernel and private
+  Tesla T4 runner committed; *no hardware result claimed yet*.
+- **Public:** `scripts/demo-site-pages.ts` registers Neural Genesis,
+  Neural Universe, Neural Light and the existing four Visual Lab
+  demonstrations. The three new public routes represent limited
+  research implementations, not completed frontiers.
+
+## Active dependencies and blockers
+
+1. Kaggle Linux has physical NVIDIA Vulkan but Chrome's WebGPU
+   selects SwiftShader. Native computational verification is valid;
+   browser execution remains independently unverified.
+2. Dell's memory pressure makes sustained local Chromium/GPU visual
+   testing undesirable. Use small guarded browser tests only when
+   resources permit, or an authorized suitable remote GPU browser.
+3. Candidate 3D fluid/fracture visuals require real captured images,
+   controls, desktop/mobile QA, meaningful synchronized benchmarks,
+   deployment route checks, and source attribution before merging
+   their public demo features.
+4. Earth requires licensed OSM/terrain data; Reality needs a real
+   user-input SfM/reconstruction/training path; Machines needs
+   free-body physics and training. None is replaceable with a cosmetic viewer.
+5. NVIDIA timing figures in native reports include setup, submission
+   and diagnostic readback, not pure timestamp-query compute latency.
+   No CPU/GPU speedup ratio is established by those numbers.
 
 ## Milestone acceptance
 1. Architecture: identified physics assumptions, numerical algorithm, data layout and validation oracle.
