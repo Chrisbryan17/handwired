@@ -1,6 +1,6 @@
 {
-  "id": "chrisbryan17/handwired-frontiers-visual-hardware",
-  "title": "Handwired Frontiers Visual Hardware Gate",
+  "id": "chrisbryan17/handwired-three-renderer-native-v2",
+  "title": "Handwired Three Renderer Native V2",
   "code_file": "visual.ipynb",
   "language": "python",
   "kernel_type": "notebook",
