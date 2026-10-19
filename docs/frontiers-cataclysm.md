@@ -78,6 +78,27 @@ The timings in the reports include shader setup, CPU submission and/or
 readback. Do not misrepresent them as isolated GPU kernel time or
 CPU/GPU speedup.
 
+## Large-scale native SPH stress — 2026-10-18
+
+The same Vulkan Tesla T4 GPU kernel suite subsequently ran **18,432
+real fluid particles for 32 complete simulation steps**. The large case
+was *not* compared body-for-body against the O(N²) CPU oracle; it was
+separately evaluated for conserved mass, finite velocities/positions
+and tank bounds. All these invariants passed:
+
+- Mass loss: **0**
+- Nonfinite values: **0**
+- Boundary violations: **0**
+- Recorded maximum speed: approximately **0.4287 model units/s**
+
+Raw evidence: [Tesla T4 SPH stress JSON](../lab/frontiers/cataclysm/results/2026-10-18-tesla-t4-18432-sph-stress.json).
+The test recorded approximately 97.3 ms for 32 steps **including
+diagnostic readbacks** and GPU submission. This is **not** a per-kernel
+GPU timestamp result or a CPU-versus-GPU throughput speedup claim.
+The existing 64-/80-/120-particle CPU parity cases passed again.
+This demonstrates a bounded fluid computation, not a tsunami at
+physical city scale.
+
 ## Browser research laboratory
 
 `demo.html` offers three deterministic physical scenarios:
@@ -111,7 +132,7 @@ CPU fallback or SwiftShader must not count as hardware verification.
 ## Remaining work
 
 - Chromium/WebGPU execution on identified physical GPU and real screenshots.
-- GPU memory stress and larger particle counts with conservation checks.
+- Further long-running stability, density-energy diagnostics and more complex particle distributions.
 - Spatial locality improvements (contiguous/sorted cells).
 - Stabilization, CFL-based adaptive stepping, WCSPH tensile instability
   diagnostics and strong-pressure energy tests.
