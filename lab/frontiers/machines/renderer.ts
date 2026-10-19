@@ -45,8 +45,16 @@ export class MachinesRenderer {
     label:'Instanced physical 3D articulated population geometry'})
    const errors=(await shader.getCompilationInfo()).messages.filter(x=>x.type==='error')
    if(errors.length)throw new Error('Articulated scene WGSL: '+errors.map(x=>x.message).join('; '))
+   // Fixed shared layout: the floor shader only uses the camera, while
+   // articulated rods/joints also read joint-state storage. Autolayout
+   // would generate incompatible layouts across these entry points.
+   const layout=device.createBindGroupLayout({entries:[
+    {binding:0,visibility:1,buffer:{type:'read-only-storage'}},
+    {binding:1,visibility:3,buffer:{type:'uniform'}},
+   ]})
+   const pipelineLayout=device.createPipelineLayout({bindGroupLayouts:[layout]})
    const pipeline=async(entryPoint:string)=>device.createRenderPipelineAsync({
-    layout:'auto',vertex:{module:shader,entryPoint},
+    layout:pipelineLayout,vertex:{module:shader,entryPoint},
     fragment:{module:shader,entryPoint:'fragment',targets:[{format}]},
     primitive:{topology:'triangle-list',cullMode:'none'},
     depthStencil:{format:'depth24plus',depthWriteEnabled:true,depthCompare:'less'},
@@ -54,7 +62,7 @@ export class MachinesRenderer {
    const [ground,rods,joints]=await Promise.all([
     pipeline('ground'),pipeline('rod'),pipeline('joint')])
    const binding=engine.renderJointBuffers.map(b=>device.createBindGroup({
-    layout:ground.getBindGroupLayout(0),entries:[
+    layout,entries:[
      {binding:0,resource:{buffer:b}},
      {binding:1,resource:{buffer:camera}},
     ]})) as [GPUBindGroup,GPUBindGroup]
