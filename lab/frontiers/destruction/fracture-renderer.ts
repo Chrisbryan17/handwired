@@ -31,13 +31,15 @@ const SIDES:u32=10u;
   return out;
  }
  let pair=endpoints[instance];
- let a=nodes[pair.x].xyz,b=nodes[pair.y].xyz;
+ let a=nodes[pair.x].xyz;
+ let b=nodes[pair.y].xyz;
  let axis=b-a;
  let direction=normalize(axis);
  let tangent=normalize(cross(direction,select(vec3<f32>(1.0,0.0,0.0),
    vec3<f32>(0.0,1.0,0.0),abs(direction.y)<.90)));
  let bitangent=cross(direction,tangent);
- let side=vertex/6u,corner=vertex%6u;
+ let side=vertex/6u;
+ let corner=vertex%6u;
  var u=side;
  let up=side+1u;
  var end=0.0;
@@ -55,13 +57,13 @@ const SIDES:u32=10u;
  out.normal=radial;out.damage=clamp(bond.z,0.0,1.0);out.location=world;
  return out;
 }
-@fragment fn fs(in:VertexOut)->@location(0) vec4<f32>{
- let n=normalize(in.normal);
+@fragment fn fs(input:VertexOut)->@location(0) vec4<f32>{
+ let n=normalize(input.normal);
  let light=normalize(vec3<f32>(-.36,.84,.72));
  let lambert=max(.08,dot(n,light));
- let hot=clamp(in.damage*2.1,0.0,1.0);
+ let hot=clamp(input.damage*2.1,0.0,1.0);
  let material=mix(vec3<f32>(.20,.76,.95),vec3<f32>(1.0,.28,.13),hot);
- let view=normalize(camera.eye.xyz-in.location);
+ let view=normalize(camera.eye.xyz-input.location);
  let rim=pow(1.0-max(0.0,dot(n,view)),2.5);
  let rgb=material*(.25+.67*lambert)+vec3<f32>(.55,.84,1.0)*rim*.20;
  return vec4<f32>(pow(clamp(rgb,vec3<f32>(0.0),vec3<f32>(1.0)),vec3<f32>(1.0/2.2)),1.0);
