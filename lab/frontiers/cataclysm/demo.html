@@ -18,18 +18,20 @@
 <option value="dam-break">Dam break / volume release</option>
 <option value="counter-current">Colliding currents / pressure front</option>
 <option value="droplet">Elevated droplet / gravity fall</option>
+<option value="dense-4096">4,096 particle GPU-only flow</option>
+<option value="stress-18432">18,432 particle GPU stress / high-end devices</option>
 </select>
 <label for="gravity">Downward gravity <output id="gravity-value">9.8</output></label>
 <input id="gravity" type="range" min="0" max="22" value="9.81" step=".1">
 <label for="stiffness">Pressure stiffness <output id="stiffness-value">12</output></label>
-<input id="stiffness" type="range" min="2" max="55" value="12" step="1">
+<input id="stiffness" type="range" min="1" max="55" value="12" step=".5">
 <label for="viscosity">Dynamic viscosity proxy <output id="viscosity-value">0.12</output></label>
 <input id="viscosity" type="range" min="0" max=".8" value=".12" step=".02">
 <label for="zoom">Orbital camera distance <output id="zoom-value">17.0</output></label>
 <input id="zoom" type="range" min="9" max="34" value="17" step=".5">
 <div class="actions"><button id="pause">Pause</button><button class="alt" id="reset">Reset tank</button></div>
-<button class="verify" id="verify">Verify live GPU timestep against CPU oracle ↗</button>
-<p class="footnote">Drag the viewport to orbit. Camera zoom uses the slider or scroll wheel. Parameter changes restart the deterministic physical experiment. No frame-to-frame CPU particle uploads or readbacks occur during playback.</p>
+<button class="verify" id="verify">Verify live fluid computation ↗</button>
+<p class="footnote">Drag the viewport to orbit. Camera zoom uses the slider or scroll wheel. Parameter changes restart the deterministic physical experiment. The two large options are GPU-only and should be used on adequately capable devices. No frame-to-frame CPU particle uploads or readbacks occur during playback.</p>
 </aside>
 <section class="stage"><canvas id="scene" width="900" height="620" aria-label="3D physically simulated SPH water particles"></canvas>
 <div class="stage-meta top-left"><span class="led"></span> REAL SPH PRESSURE / GPU-RESIDENT STATE</div>
@@ -44,7 +46,7 @@
 <div class="metric"><span>Screen refresh</span><strong id="fps">—</strong><small>NOT A GPU KERNEL BENCHMARK</small></div>
 <div class="metric"><span>Tracked GPU allocations</span><strong id="memory">—</strong><small>KiB; NOT THE ADAPTER'S VRAM</small></div>
 <div class="eyebrow lower">GPU ADAPTER</div><p id="adapter">Requesting physical adapter…</p>
-<div class="eyebrow lower">INDEPENDENT NUMERICAL ORACLE</div><p id="verification">Compare an actual live GPU update with the all-pairs CPU pressure and viscosity reference.</p>
+<div class="eyebrow lower">INDEPENDENT NUMERICAL ORACLE</div><p id="verification">For 1024 or fewer particles: independent CPU/GPU differential. For larger GPU-only workloads: mass, finite-state and tank-boundary checks.</p>
 <div class="eyebrow lower">SCIENTIFIC LIMIT</div><p>Real SPH equations, approximate weak compressibility and boundary bounces. Displayed spheres are particle markers, not an iso-surface or validated water optics.</p>
 </aside></main>
 <footer><span>HANDWIRED / MIT OPEN-SOURCE NUMERICAL RESEARCH</span><a href="../frontiers/">EIGHT FRONTIERS GALLERY ↗</a></footer>

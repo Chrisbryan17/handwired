@@ -1,12 +1,14 @@
 import {makeFluidBlock,validateSph,sphDefaults,
  type SphSettings,type SphState} from './model.ts'
-export type CataclysmPreset='dam-break'|'counter-current'|'droplet'
+export type CataclysmPreset='dam-break'|'counter-current'|'droplet'|'dense-4096'|'stress-18432'
 /** Repeatable initial conditions for the real WCSPH numerical solver.
  * Particle motion is never sampled from baked wave animations.
  */
 export function makeCataclysmPreset(name:CataclysmPreset):SphState{
- if(!(['dam-break','counter-current','droplet'] as string[]).includes(name))
+ if(!(['dam-break','counter-current','droplet','dense-4096','stress-18432'] as string[]).includes(name))
   throw new Error('unrecognized real fluid scenario')
+ if(name==='stress-18432')return makeGpuStressField()
+ if(name==='dense-4096')return makeGpuStressField(16,16,16)
  if(name==='dam-break'){
   const state=makeFluidBlock(10,8,8,.48)
   for(let i=0;i<state.positions.length/4;i++){
@@ -53,7 +55,7 @@ export function cataclysmSettings(gravity:number,stiffness:number,viscosity:numb
 }
 export function inspectPreset(name:CataclysmPreset,p:SphSettings=cataclysmSettings(9.81,12,.12)){
  const state=makeCataclysmPreset(name)
- const n=validateSph(state,p)
+ const n=validateSph(state,p,state.positions.length>4096?131_072:1024)
  let totalMass=0,activeMomentum=0
  for(let i=0;i<n;i++){
   totalMass+=state.positions[i*4+3]!

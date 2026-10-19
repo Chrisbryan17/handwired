@@ -14,16 +14,21 @@ const pause=el<HTMLButtonElement>('pause')
 const verify=el<HTMLButtonElement>('verify')
 const error=el<HTMLElement>('error')
 const print=(id:string,text:string)=>{el<HTMLElement>(id).textContent=text}
-const parameters=():SphSettings=>cataclysmSettings(
- Number(gravity.value),Number(stiffness.value),Number(viscosity.value))
+const isLarge=()=>preset.value==='dense-4096'||preset.value==='stress-18432'
+const parameters=():SphSettings=>{
+ const base=cataclysmSettings(Number(gravity.value),
+  Number(stiffness.value),Number(viscosity.value))
+ return isLarge()?{...base,dt:.001,restDensity:25}:base
+}
 let simulation:CataclysmSphGpu|null=null,viewer:CataclysmRenderer|null=null
 let frameHandle=0,epoch=0,paused=false,checking=false,frames=0,lastFps=performance.now()
 function displayControls(){
  print('gravity-value',Number(gravity.value).toFixed(1))
- print('stiffness-value',Number(stiffness.value).toFixed(0))
+ print('stiffness-value',Number(stiffness.value).toFixed(1))
  print('viscosity-value',Number(viscosity.value).toFixed(2))
  print('zoom-value',Number(zoom.value).toFixed(1))
  if(viewer)viewer.distance=Number(zoom.value)
+  if(isLarge())viewer.target=[0.1,1.9,1.0]
 }
 function fail(cause:unknown){
  error.hidden=false
@@ -54,11 +59,13 @@ async function start(){
  viewer=null;simulation=null;paused=false;checking=false
  error.hidden=true;pause.textContent='Pause'
  print('gpu-status','COMPILING GPU HYDRODYNAMICS')
- print('verification','Click Verify to compare one live 3D SPH step with the independent CPU numerical oracle.')
+ print('verification',isLarge()?
+  'Large GPU-only run: Verify checks mass conservation, tank containment and finite values, not an O(N²) CPU comparison.':
+  'Click Verify to compare a live SPH step with the independent CPU numerical oracle.')
  displayControls()
  try{
   const initial=makeCataclysmPreset(preset.value as CataclysmPreset)
-  validateSph(initial,parameters())
+  validateSph(initial,parameters(),isLarge()?131_072:1024)
   const engine=await CataclysmSphGpu.create(initial,parameters())
   if(token!==epoch){engine.dispose();return}
   const scene=await CataclysmRenderer.create(engine,canvas)
@@ -78,26 +85,58 @@ async function verifyStep(){
  checking=true;paused=true;pause.textContent='Resume';verify.disabled=true
  try{
   const before=await simulation.read()
-  const predicted=stepSphCpu(before,parameters())
+  const expected=isLarge()?null:stepSphCpu(before,parameters())
   simulation.step()
   await simulation.flush()
   const after=await simulation.read()
-  let maximum=0,invalid=0
-  for(const axis of ['positions','velocities'] as const)
-   for(let i=0;i<predicted[axis].length;i++){
-    const observed=after[axis][i]!
-    if(!Number.isFinite(observed))invalid++
-    maximum=Math.max(maximum,Math.abs(observed-predicted[axis][i]!))
+  let invalid=0
+  if(expected!==null){
+   let maximum=0
+   for(const axis of ['positions','velocities'] as const)
+    for(let i=0;i<expected[axis].length;i++){
+     const observed=after[axis][i]??Number.NaN
+     if(!Number.isFinite(observed))invalid++
+     maximum=Math.max(maximum,Math.abs(observed-(expected[axis][i]??Number.NaN)))
+    }
+   const good=maximum<.015&&invalid===0
+   print('verification',(good?'PASS':'FAIL')+' · GPU vs independent CPU next step: '+
+    maximum.toExponential(3)+' maximum component error; '+invalid+
+    ' nonfinite components. Adapter: '+simulation.gpu.adapter.name+
+    '. Not a tsunami validation.')
+  }else{
+   const limits=simulation.settings
+   let initialMass=0,actualMass=0,boundaryViolations=0,maxSpeed=0
+   for(let i=0;i<after.positions.length;i+=4){
+    initialMass+=before.positions[i+3]??0
+    actualMass+=after.positions[i+3]??0
+    let speedSquared=0
+    for(let axis=0;axis<3;axis++){
+     const pos=after.positions[i+axis]??Number.NaN
+     const vel=after.velocities[i+axis]??Number.NaN
+     if(!Number.isFinite(pos)||!Number.isFinite(vel))invalid++
+     if(pos<limits.min[axis]!-1e-4||pos>limits.max[axis]!+1e-4)
+      boundaryViolations++
+     speedSquared+=vel*vel
+    }
+    maxSpeed=Math.max(maxSpeed,Math.sqrt(speedSquared))
    }
-  const good=maximum<.015&&invalid===0
-  print('verification',(good?'PASS':'FAIL')+' · GPU vs independent CPU next step: '+
-   maximum.toExponential(3)+' maximum component error; '+invalid+
-   ' nonfinite components. Adapter: '+simulation.gpu.adapter.name+
-   '. Compare within WCSPH discretization; not a tsunami validation.')
+   const massError=Math.abs(initialMass-actualMass)
+   const good=invalid===0&&boundaryViolations===0&&massError<=1e-5&&maxSpeed<250
+   print('verification',(good?'PASS':'FAIL')+
+    ' · GPU-only invariants for '+simulation.count.toLocaleString()+
+    ' particles: mass error '+massError.toExponential(2)+
+    ', nonfinite '+invalid+', out-of-tank coordinates '+boundaryViolations+
+    ', peak speed '+maxSpeed.toFixed(3)+
+    '. No all-pairs CPU equivalence implied.')
+  }
  }catch(e){print('verification','Verification failed: '+String(e))}
  finally{checking=false;verify.disabled=false}
 }
-preset.addEventListener('change',()=>{void start()})
+preset.addEventListener('change',()=>{
+  stiffness.value=isLarge()?'2.5':'12'
+  viscosity.value=isLarge()?'.025':'.12'
+  void start()
+})
 for(const slider of [gravity,stiffness,viscosity]){
  slider.addEventListener('input',displayControls)
  slider.addEventListener('change',()=>{void start()})

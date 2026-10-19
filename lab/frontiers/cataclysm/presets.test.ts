@@ -42,3 +42,14 @@ test('18,432 physically represented particles remain inside GPU stress bounds',(
  expect(totalMass).toBe(18_432)
  expect(()=>makeGpuStressField(72,72,72)).toThrow()
 })
+
+test('large browser presets match two actual GPU-only workload sizes',()=>{
+ for(const [preset,expected] of [['dense-4096',4096],['stress-18432',18432]] as const){
+  const first=makeCataclysmPreset(preset)
+  const second=makeCataclysmPreset(preset)
+  expect(first.positions.length/4).toBe(expected)
+  expect(first.positions).toEqual(second.positions)
+  const data=inspectPreset(preset)
+  expect(data.totalMass).toBe(expected)
+ }
+})
