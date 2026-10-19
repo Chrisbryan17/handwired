@@ -56,7 +56,7 @@ jobs:
           fi
           bunx tsc -p . --pretty false
       - name: Type-aware lint
-        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts src/runtime/frontiers-contacts.ts src/runtime/frontiers-contacts.test.ts lab/frontiers
+        run: bunx oxlint --type-aware src/runtime/frontiers-device.ts src/runtime/frontiers-spatial.ts src/runtime/frontiers-spatial-gpu.ts src/runtime/frontiers-contacts.ts src/runtime/frontiers-contacts.test.ts src/runtime/frontiers-contacts-gpu.ts lab/frontiers
       - name: Existing demonstration regression and prefix-safe production build
         run: |
           bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
