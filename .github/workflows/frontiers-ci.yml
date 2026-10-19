@@ -54,7 +54,14 @@ jobs:
           if [ -f lab/frontiers/spatial/tsconfig.json ]; then
             bunx tsc -p lab/frontiers/spatial/tsconfig.json --pretty false
           fi
-'param($m)';$a=$m.Groups[1].Value.TrimEnd();$b=$m.Groups[2].Value.TrimEnd();return $a+"`n          fi`n"+$b
+          if [ -f lab/frontiers/cataclysm/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/cataclysm/tsconfig.json --pretty false
+          fi
+          if [ -f lab/frontiers/destruction/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/destruction/tsconfig.json --pretty false
+          fi
+          if [ -f lab/frontiers/machines/tsconfig.json ]; then
+            bunx tsc -p lab/frontiers/machines/tsconfig.json --pretty false
           fi
           bunx tsc -p . --pretty false
       - name: Type-aware lint
@@ -63,7 +70,9 @@ jobs:
         run: |
           bun test --timeout 30000 lab/visual-swarm/model.test.ts lab/visual-maze/model.test.ts lab/visual-cloth/model.test.ts lab/visual-fluid/model.test.ts
           bun run site:build
-'param($m)';$a=$m.Groups[1].Value.TrimEnd();$b=$m.Groups[2].Value.TrimEnd();return $a+"`n          fi`n"+$b
+          bun build lab/frontiers/cataclysm/demo.html --outdir /tmp/handwired-fluid-candidate
+          bun build lab/frontiers/destruction/fracture-demo.html --outdir /tmp/handwired-fracture-candidate
+          bun build lab/frontiers/machines/demo.html --outdir /tmp/handwired-machines-candidate
       - name: Upload static build for inspection
         uses: actions/upload-artifact@v4
         with:
