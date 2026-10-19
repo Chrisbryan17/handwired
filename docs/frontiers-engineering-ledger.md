@@ -18,11 +18,11 @@ WebGPU certification.
 | --- | --- | --- | --- |
 | **01 Neural Earth** | ARCHITECTURE | No validated Kingston 3D agent twin yet | Real licensed road/building/elevation data, routing and GPU agents |
 | **02 Neural Cataclysm** | **GPU VERIFIED (native NVIDIA Tesla T4; WCSPH slice)** | Interactive 3D candidate on `feat/frontier-02-cataclysm`; *not published* | Real Chromium hardware screenshot QA, stability, surface reconstruction and tsunami coast model |
-| **03 Neural Genesis** | PUBLISHED (limited cellular/reaction–diffusion slice) | [Browser](../neural-genesis/) exists via Pages route; morphology/evolution are incomplete | True mutation/selection/training beyond deterministic field rules |
-| **04 Neural Universe** | PUBLISHED (limited 256-body pairwise gravity slice) | [Browser](../neural-universe/) exists via Pages route; no millions-body gravity claim | Barnes–Hut, energy checks, scalability and colliding galaxy complexity |
+| **03 Neural Genesis** | PUBLISHED (limited cellular/reaction–diffusion slice) | [Browser](https://chrisbryan17.github.io/handwired/neural-genesis/) exists via Pages route; morphology/evolution are incomplete | True mutation/selection/training beyond deterministic field rules |
+| **04 Neural Universe** | PUBLISHED (limited 256-body pairwise gravity slice) | [Browser](https://chrisbryan17.github.io/handwired/neural-universe/) exists via Pages route; no millions-body gravity claim | Barnes–Hut, energy checks, scalability and colliding galaxy complexity |
 | **05 Neural Reality** | ARCHITECTURE | No reproducible input-to-reconstruction pipeline yet | COLMAP/SfM workflow, licensed images, splat training and viewer |
 | **06 Neural Destruction** | **GPU VERIFIED (native NVIDIA Tesla T4; bonded fracture slice)** | Interactive candidate in `feat/frontier-06-destruction`; *not published* | Actual browser visuals/QA, structural stability, rigid-shape contact and fracture/debris coupling |
-| **07 Neural Light** | PUBLISHED (limited physically traced scene) | [Browser](../neural-light/) and desktop/mobile hardware evidence; full PBR scope open | Acceleration BVH/MIS/GGX, convergence and complex objects |
+| **07 Neural Light** | PUBLISHED (limited physically traced scene) | [Browser](https://chrisbryan17.github.io/handwired/neural-light/) and desktop/mobile hardware evidence; full PBR scope open | Acceleration BVH/MIS/GGX, convergence and complex objects |
 | **08 Neural Machines** | CPU VERIFIED (2DOF leg slice); GPU candidate committed | `feat/frontier-08-machines`, private GPU test submitted; *not published* | Physical T4 differential run, free-floating articulated contact and actual gait training |
 | **Shared GPU physics** | GPU VERIFIED (Intel Gen-12LP sphere contacts + 3D grid) | Merged by [PR #14](https://github.com/Chrisbryan17/handwired/pull/14) | Long-run stability and dense-contact convergence |
 
