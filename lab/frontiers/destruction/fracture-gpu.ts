@@ -37,9 +37,12 @@ fn bondUpdate(@builtin(global_invocation_id) id:vec3<u32>){
  let index=id.x;
  if(index>=params.bonds){return;}
  let endpointsPair=endpoints[index];
- let a=endpointsPair.x;let b=endpointsPair.y;
- let pa=nodePositions[a].xyz,pb=nodePositions[b].xyz;
- let va=nodeVelocities[a].xyz,vb=nodeVelocities[b].xyz;
+ let a=endpointsPair.x;
+ let b=endpointsPair.y;
+ let pa=nodePositions[a].xyz;
+ let pb=nodePositions[b].xyz;
+ let va=nodeVelocities[a].xyz;
+ let vb=nodeVelocities[b].xyz;
  let axis=pb-pa;
  let dist=length(axis);
  let props=material[index];
