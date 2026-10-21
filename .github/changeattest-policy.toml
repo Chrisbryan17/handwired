@@ -1,0 +1,11 @@
+# Advisory ChangeAttest source/integration trial for Handwired.
+# Does not modify or replace Handwired's existing CPU/GPU CI jobs.
+[policy]
+version = 1
+scope = "tracked"
+include_prefixes = ["src/", "lab/", ".github/workflows/"]
+required_checks = ["yaml", "merge-conflict", "private-key"]
+allow_skipped_checks = []
+min_files = 100
+timeout_seconds = 180
+max_file_bytes = 8388608
