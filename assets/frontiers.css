@@ -4,3 +4,10 @@
 .real-scene{position:absolute;inset:0 0 auto 0;width:100%;height:195px;object-fit:cover;object-position:center 49%;opacity:.82;mask-image:linear-gradient(#000 55%,transparent 100%);z-index:-1}
 .card:has(> .real-scene) .ordinal{position:absolute;z-index:1;top:19px;left:22px;text-shadow:0 1px 12px #050b18}
 .card:has(> .real-scene) h3{margin:0 0 12px;text-shadow:0 2px 14px #060c17}
+
+/* New compute previews use restrained CSS-native geometric identity until real
+   hardware screenshots have passed independent visual QA. No generated art. */
+.frontier-live{border-color:#3c766f;background:radial-gradient(ellipse at 85% 12%,#1e4749,#0c1527 67%)}
+.frontier-live .status{color:#a0ebd7}
+.live-art{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:20px;font:750 8px ui-monospace,monospace;letter-spacing:.12em;color:#8ed7d5}
+.live-art-emblem{font-size:34px;color:#92ead7;line-height:1;opacity:.78}

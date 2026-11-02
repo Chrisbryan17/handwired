@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "backend": "wgpu-native/Vulkan",
+  "browserWebGpuVerified": false,
+  "started": "2026-10-18T17:09:43Z",
+  "visibleAdapters": [
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='', architecture='', device='Tesla T4/PCIe/SSE2', description='3.3.0 NVIDIA 580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=0, adapter_type='Unknown', backend_type='OpenGL'>"
+  ],
+  "executingAdapter": "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+  "numSamples": 256,
+  "maxError": 0.0,
+  "mismatches": 0,
+  "invalid": 0,
+  "hostSubmitMs": 106.70839499999829,
+  "readbackMs": 62.025500000004286,
+  "tolerance": 0.0001,
+  "shader": "Actual Handwired-compiled WGSL numerical circuit",
+  "note": "True Vulkan GPU compute if executingAdapter is Tesla T4; not full SPH or browser WebGPU",
+  "finished": "2026-10-18T17:09:44Z"
+}

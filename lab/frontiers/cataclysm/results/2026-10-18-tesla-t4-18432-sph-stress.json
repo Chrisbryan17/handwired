@@ -1,0 +1,86 @@
+{
+  "ok": true,
+  "backend": "wgpu-native/Vulkan",
+  "browserWebGpuVerified": false,
+  "method": "native hardware WGSL executing actual Handwired 3D SPH compute stages",
+  "cases": [
+    {
+      "name": "64-spatial-pressure",
+      "particles": 64,
+      "steps": 1,
+      "errors": {
+        "positions": 0.0,
+        "velocities": 2.9802322387695312e-08,
+        "density": 2.86102294921875e-06,
+        "pressure": 4.1961669921875e-05
+      },
+      "nonfinite": 0,
+      "massError": 0.0,
+      "ok": true,
+      "elapsedWithExplicitDiagnosticReadbacksMs": 273.482
+    },
+    {
+      "name": "80-viscosity",
+      "particles": 80,
+      "steps": 4,
+      "errors": {
+        "positions": 0.0,
+        "velocities": 1.1920928955078125e-07,
+        "density": 2.86102294921875e-06,
+        "pressure": 3.0517578125e-05
+      },
+      "nonfinite": 0,
+      "massError": 0.0,
+      "ok": true,
+      "elapsedWithExplicitDiagnosticReadbacksMs": 3.534
+    },
+    {
+      "name": "120-multistep",
+      "particles": 120,
+      "steps": 8,
+      "errors": {
+        "positions": 2.384185791015625e-07,
+        "velocities": 2.384185791015625e-07,
+        "density": 2.384185791015625e-06,
+        "pressure": 2.288818359375e-05
+      },
+      "nonfinite": 0,
+      "massError": 0.0,
+      "ok": true,
+      "elapsedWithExplicitDiagnosticReadbacksMs": 4.375
+    },
+    {
+      "name": "18432-body-32-step-GPU-invariants",
+      "particles": 18432,
+      "steps": 32,
+      "mode": "physical GPU conservation/stability stress; not CPU all-pairs equivalence",
+      "nonfinite": 0,
+      "boundaryViolations": 0,
+      "massError": 0.0,
+      "peakSpeed": 0.42873939871788025,
+      "pressureMaximumInitial": 1.079106330871582,
+      "elapsedWithExplicitDiagnosticReadbacksMs": 97.334,
+      "ok": true
+    }
+  ],
+  "started": "2026-10-19T02:17:59Z",
+  "visibleAdapters": [
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+    "<GPUAdapterInfo dict with vendor='', architecture='', device='Tesla T4/PCIe/SSE2', description='3.3.0 NVIDIA 580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=0, adapter_type='Unknown', backend_type='OpenGL'>"
+  ],
+  "executingAdapter": "<GPUAdapterInfo dict with vendor='NVIDIA', architecture='', device='Tesla T4', description='580.178.04', stackgroup_min_size=4, stackgroup_max_size=128, vendor_id=4318, device_id=7864, adapter_type='DiscreteGPU', backend_type='Vulkan'>",
+  "shaderSha256": {
+    "spatial-grid": "87c9342bccafc66c0b57afa1ce69b7de64d8012ab5bdf9c6fffda4e981feea6a",
+    "sph-density": "f187ae435c75823f8b83fd7d846b89607fa2204f6c769bd65cea2b75dd96271f",
+    "sph-integrate": "76fe010095fe52b552331dfb9bbe6e83d7ce95ee0fd0870e089da7797cc5b500"
+  },
+  "tolerances": {
+    "positions": 0.015,
+    "velocities": 0.015,
+    "density": 0.025,
+    "pressure": 0.15
+  },
+  "scientificLimits": "WCSPH bonded to GPU grid; not coastal tsunami CFD or free-surface reconstruction",
+  "finished": "2026-10-19T02:18:01Z"
+}
