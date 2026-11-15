@@ -1,0 +1,11 @@
+## Performance verification
+
+The current execution model makes batch size and circuit structure central to performance claims. In `src/runtime/webgpu-shader.ts`, both `execute` and `executeLayer` assign one invocation to a sample; each invocation then evaluates its operations serially. Layer mode groups operations by dependency depth and dispatches each group separately, so it can add dispatch overhead without creating parallel work inside a layer. Benchmark monolithic and layer strategies across batch sizes, operation counts, layer counts, and term counts to show where each strategy helps.
+
+Measure end-to-end and kernel-focused costs separately. `src/runtime/webgpu.ts` creates buffers and pipelines during initialization, uploads source data, dispatches work, and reads results back. Report evaluator creation and pipeline compilation separately from warm repeated execution, and include upload, dispatch, state advancement, and final readback in an end-to-end measurement. For stateful workloads, compare equal step counts and identical source updates; avoid comparing only GPU dispatch time with a CPU result that includes other work.
+
+Use repeated runs and report distributions (at least median and spread), hardware, browser, adapter, batch capacity, strategy, and numerical policy. Include small workloads where dispatch and transfer overhead may outweigh GPU throughput, as the documented eight-step measurements illustrate. Every performance result should include a correctness check against `evaluateReference` using an explicit tolerance and mismatch count. The existing October 2026 measurements are exploratory: three runs, one Intel UHD adapter, 8,192 samples, and three dependent layers. They support a workload-specific observation, not a general speedup guarantee.
+
+### Team handoff
+
+Benchmark owners should add a matrix covering small and large batches, shallow and deep circuits, and both dispatch strategies; record cold initialization separately from warm execution and retain raw run data. Verification owners should pair each benchmark case with CPU reference comparison and report mismatches alongside timing. Documentation owners should label conclusions with the tested environment and workload, and avoid extrapolating these results to intra-layer parallelism or other adapters.
