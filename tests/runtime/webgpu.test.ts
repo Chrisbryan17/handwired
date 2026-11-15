@@ -160,3 +160,34 @@ describe('reusable circuit evaluator', () => {
     }
   })
 })
+
+
+
+test('reference-exact numeric policy uses CPU semantics and rejects GPU mode', async () => {
+  const circuit = new Circuit(2)
+  const a = circuit.source(0)
+  const b = circuit.source(1)
+  const rounded = circuit.roundAffine([[a, 0.1], [b, 0.2]], 0.3)
+  const input = Float32Array.from([1.234567, -3.456789, 1e-7, 2.345678])
+  const evaluator = await createWebGpuEvaluator(circuit, {
+    numericPolicy: 'reference-exact', capacity: 2,
+  })
+  try {
+    expect(evaluator.mode).toBe('cpu')
+    expect(evaluator.fallbackReason).toBe('reference-exact semantics require CPU')
+    const output = await evaluator.evaluate(input)
+    const width = circuit.sourceSize + circuit.operations.length
+    for (let i = 0; i < 2; i++) {
+      const expected = circuit.evaluateReference(input.subarray(i * 2, (i + 1) * 2))
+      expect(Array.from(output.subarray(i * width, (i + 1) * width)))
+        .toEqual(Array.from(expected))
+      expect(output[i * width + rounded]).toBe(expected[rounded])
+    }
+  } finally {
+    evaluator.destroy()
+  }
+
+  await expect(createWebGpuEvaluator(circuit, {
+    numericPolicy: 'reference-exact', mode: 'gpu',
+  })).rejects.toThrow('reference-exact semantics require CPU execution')
+})
